@@ -1,0 +1,48 @@
+2022-04-30 18:44:44,984,<=================== Round: 1 ===================>
+2022-04-30 18:44:44,984,<~~~~~~~~~~~~~~~~~ Poison Attack ~~~~~~~~~~~~~~~~~>
+2022-04-30 18:44:45,048,========== [worker0] transaction invoke ==========
+2022-04-30 18:45:38,834,TIP1: Tx ID: b2ea4ab39a054711b17eafba5047f8cb | Worker ID: worker1 | F1 Score: 15.54815
+2022-04-30 18:45:38,835,TIP2: Tx ID: 0dfa610050014b4683bcf2d1393ce999 | Worker ID: genesis_worker | F1 Score: 2.37902
+2022-04-30 18:45:38,835,worker0 -> worker1 | worker0 -> genesis_worker
+2022-04-30 18:45:49,685,previous worker accuracy: 1.9165469713456655
+2022-04-30 18:46:05,186,[---- worker0 model aggregation F1 Score: 1.91655 ----]
+2022-04-30 18:46:15,128,[---- worker0 model aggregation origin accuracy: 10.28000 ----]
+2022-04-30 20:25:34,015,<=================== Round: 1 ===================>
+2022-04-30 20:25:34,016,<~~~~~~~~~~~~~~~~~ Poison Attack ~~~~~~~~~~~~~~~~~>
+2022-04-30 20:25:34,077,========== [worker0] transaction invoke ==========
+2022-04-30 20:26:16,137,TIP1: Tx ID: cb73ccb6a7c34780a1ac3e25a9d2acac | Worker ID: genesis_worker | F1 Score: 2.37902
+2022-04-30 20:26:16,138,TIP2: Tx ID: 67789df8db454defb8e26b57ae192ef8 | Worker ID: genesis_worker | F1 Score: 2.37902
+2022-04-30 20:26:16,138,worker0 -> genesis_worker | worker0 -> genesis_worker
+2022-04-30 20:26:25,882,previous worker accuracy: 1.9165469713456655
+2022-04-30 20:26:35,036,[---- worker0 model aggregation accuracy: 1.91655 ----]
+2022-04-30 20:26:50,439,[---- worker0 model aggregation origin accuracy: 10.28000 ----]
+2022-04-30 20:39:51,783,<=================== Round: 1 ===================>
+2022-04-30 20:39:51,784,<~~~~~~~~~~~~~~~~~ Poison Attack ~~~~~~~~~~~~~~~~~>
+2022-04-30 20:39:51,828,========== [worker0] transaction invoke ==========
+2022-04-30 20:40:24,576,TIP1: Tx ID: 3cb22346b9ba45ec98ffe06555cd9561 | Worker ID: worker1 | F1 Score: 19.09976
+2022-04-30 20:40:24,576,TIP2: Tx ID: 21cfc0df56ec47fa91628e26db3dfc6a | Worker ID: genesis_worker | F1 Score: 2.37902
+2022-04-30 20:40:24,576,worker0 -> worker1 | worker0 -> genesis_worker
+2022-04-30 20:40:33,576,previous worker accuracy: 1.9165469713456655
+2022-04-30 20:40:42,175,[---- worker0 model aggregation accuracy: 1.91655 ----]
+2022-04-30 20:40:50,205,[---- worker0 model aggregation origin accuracy: 10.28000 ----]
+2022-04-30 20:58:20,577,<=================== Round: 1 ===================>
+2022-04-30 20:58:20,579,<~~~~~~~~~~~~~~~~~ Poison Attack ~~~~~~~~~~~~~~~~~>
+2022-04-30 20:58:20,621,========== [worker0] transaction invoke ==========
+2022-04-30 20:59:03,656,TIP1: Tx ID: 7f7c771eab74437e9dfd8a862e429dd1 | Worker ID: worker1 | F1 Score: 19.09976
+2022-04-30 20:59:03,656,TIP2: Tx ID: 0663d9f970144786a95c10ee0d2bada1 | Worker ID: genesis_worker | F1 Score: 2.37902
+2022-04-30 20:59:03,657,worker0 -> worker1 | worker0 -> genesis_worker
+2022-04-30 20:59:19,281,previous worker accuracy: 1.9165469713456655
+2022-04-30 20:59:32,229,[---- worker0 model aggregation accuracy: 1.91655 ----]
+2022-04-30 20:59:43,634,[---- worker0 model aggregation origin accuracy: 10.28000 ----]
+2022-04-30 21:17:59,155,<=================== Round: 1 ===================>
+2022-04-30 21:17:59,157,<~~~~~~~~~~~~~~~~~ Poison Attack ~~~~~~~~~~~~~~~~~>
+2022-04-30 21:17:59,199,========== [worker0] transaction invoke ==========
+2022-04-30 21:18:39,042,TIP1: Tx ID: f73efeee26804a118d6c68f4b010b4ee | Worker ID: worker1 | F1 Score: 19.09976
+2022-04-30 21:18:39,043,TIP2: Tx ID: bc5d717cb6644d058c6a7a1598a52d43 | Worker ID: genesis_worker | F1 Score: 2.37902
+2022-04-30 21:18:39,044,worker0 -> worker1 | worker0 -> genesis_worker
+2022-04-30 21:18:47,424,previous worker accuracy: 1.9165469713456655
+2022-04-30 21:18:55,636,[---- worker0 model aggregation accuracy: 1.91655 ----]
+2022-04-30 21:19:05,568,[---- worker0 model aggregation origin accuracy: 10.28000 ----]
+2022-04-30 21:50:44,047,<=================== Round: 1 ===================>
+2022-04-30 21:50:44,048,<~~~~~~~~~~~~~~~~~ Poison Attack ~~~~~~~~~~~~~~~~~>
+2022-04-30 21:50:44,103,========== [worker0] transaction invoke ==========

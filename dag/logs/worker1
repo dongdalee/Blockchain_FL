@@ -1,0 +1,47 @@
+2022-04-30 18:40:37,111,<=================== Round: 1 ===================>
+2022-04-30 18:40:37,111,Input training epochs: 1
+2022-04-30 18:40:37,112,Total training epochs: 1
+2022-04-30 18:43:11,339,[Epoch:    1] cost = 0.171070009
+2022-04-30 18:43:11,348,========== [worker1] transaction invoke ==========
+2022-04-30 18:43:57,871,TIP1: Tx ID: 0dfa610050014b4683bcf2d1393ce999 | Worker ID: genesis_worker | F1 Score: 2.37902
+2022-04-30 18:43:57,872,TIP2: Tx ID: 82e40602069d47168dff751ea75bc7ef | Worker ID: genesis_worker | F1 Score: 2.37902
+2022-04-30 18:43:57,872,worker1 -> genesis_worker | worker1 -> genesis_worker
+2022-04-30 18:44:13,286,previous worker accuracy: 98.81991717129551
+2022-04-30 18:44:29,692,[---- worker1 model aggregation F1 Score: 15.54815 ----]
+2022-04-30 18:44:44,983,[---- worker1 model aggregation origin accuracy: 23.21000 ----]
+2022-04-30 20:26:50,440,<=================== Round: 1 ===================>
+2022-04-30 20:26:50,442,Input training epochs: 1
+2022-04-30 20:26:50,443,Total training epochs: 1
+2022-04-30 20:36:08,864,<=================== Round: 1 ===================>
+2022-04-30 20:36:08,865,Input training epochs: 1
+2022-04-30 20:36:08,865,Total training epochs: 1
+2022-04-30 20:38:40,937,[Epoch:    1] cost = 0.150386468
+2022-04-30 20:38:40,953,========== [worker1] transaction invoke ==========
+2022-04-30 20:39:26,497,TIP1: Tx ID: 21cfc0df56ec47fa91628e26db3dfc6a | Worker ID: genesis_worker | F1 Score: 2.37902
+2022-04-30 20:39:26,497,TIP2: Tx ID: 4238833cb0504f2daade9546dd7054f8 | Worker ID: genesis_worker | F1 Score: 2.37902
+2022-04-30 20:39:26,497,worker1 -> genesis_worker | worker1 -> genesis_worker
+2022-04-30 20:39:35,703,previous worker accuracy: 98.76975357003826
+2022-04-30 20:39:44,212,[---- worker1 model aggregation accuracy: 19.09976 ----]
+2022-04-30 20:39:51,783,[---- worker1 model aggregation origin accuracy: 31.80000 ----]
+2022-04-30 20:54:25,284,<=================== Round: 1 ===================>
+2022-04-30 20:54:25,285,Input training epochs: 1
+2022-04-30 20:54:25,285,Total training epochs: 1
+2022-04-30 20:57:11,180,[Epoch:    1] cost = 0.150386468
+2022-04-30 20:57:11,192,========== [worker1] transaction invoke ==========
+2022-04-30 20:57:51,257,TIP1: Tx ID: 0663d9f970144786a95c10ee0d2bada1 | Worker ID: genesis_worker | F1 Score: 2.37902
+2022-04-30 20:57:51,257,TIP2: Tx ID: 0e933a486b5640a0a8170c41a6bf1653 | Worker ID: genesis_worker | F1 Score: 2.37902
+2022-04-30 20:57:51,258,worker1 -> genesis_worker | worker1 -> genesis_worker
+2022-04-30 20:58:01,231,previous worker accuracy: 98.76975357003826
+2022-04-30 20:58:10,287,[---- worker1 model aggregation accuracy: 19.09976 ----]
+2022-04-30 20:58:20,576,[---- worker1 model aggregation origin accuracy: 31.80000 ----]
+2022-04-30 21:13:57,084,<=================== Round: 1 ===================>
+2022-04-30 21:13:57,086,Input training epochs: 1
+2022-04-30 21:13:57,086,Total training epochs: 1
+2022-04-30 21:16:38,906,[Epoch:    1] cost = 0.150386468
+2022-04-30 21:16:38,923,========== [worker1] transaction invoke ==========
+2022-04-30 21:17:24,692,TIP1: Tx ID: bc5d717cb6644d058c6a7a1598a52d43 | Worker ID: genesis_worker | F1 Score: 2.37902
+2022-04-30 21:17:24,693,TIP2: Tx ID: ba28a3ed96a54253a48f3f1be32fc6d5 | Worker ID: genesis_worker | F1 Score: 2.37902
+2022-04-30 21:17:24,693,worker1 -> genesis_worker | worker1 -> genesis_worker
+2022-04-30 21:17:36,697,previous worker accuracy: 98.76975357003826
+2022-04-30 21:17:48,102,[---- worker1 model aggregation accuracy: 19.09976 ----]
+2022-04-30 21:17:59,155,[---- worker1 model aggregation origin accuracy: 31.80000 ----]
