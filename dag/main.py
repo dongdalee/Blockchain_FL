@@ -25,7 +25,6 @@ worker_id_list = []
 delayed_worker_list = []
 
 
-
 if __name__ == "__main__":
 
     # create worker

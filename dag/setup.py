@@ -1,15 +1,14 @@
 import shutil
 import os
-
-import numpy as np
 import torch
 import warnings
 from model import CNN
+from parameter import SHARD_ID
 warnings.filterwarnings('ignore')
 
-
-DIRECTORY_NAME = "s1"
 BLOCK_NUM = input("Input Block Number: ")
+
+"""
 SAVE_MODEL_PATH = "./model/"
 PATH = "./model/aggregation.pt"
 
@@ -89,26 +88,30 @@ def handler():
     aggregation_model.fc2.bias.data = aggregation_model.fc2.bias.data / model_num
     
     torch.save(aggregation_model.state_dict(), PATH)
-
+"""
 
 # 실험 데이터 복사 =========================================================================================================
-if DIRECTORY_NAME not in os.listdir("./../"):
-    print("Shard {0} Directory produced !".format(DIRECTORY_NAME))
-    os.mkdir("./../" + DIRECTORY_NAME)
+if SHARD_ID not in os.listdir("./../"):
+    print("{0} Directory produced !".format(SHARD_ID))
+    os.mkdir("./../" + SHARD_ID)
 
-# ./../s1/1
-if str(BLOCK_NUM) not in os.listdir("./../" + DIRECTORY_NAME + "/"):
+# ./../s1/1 -> ./../shard1/1
+if str(BLOCK_NUM) not in os.listdir("./../" + SHARD_ID + "/"):
     print("Block {0} Directory produced !".format(BLOCK_NUM))
-    os.mkdir("./../" + DIRECTORY_NAME + "/" + str(BLOCK_NUM))
+    os.mkdir("./../" + SHARD_ID + "/" + str(BLOCK_NUM))
 
-shutil.copytree("./acc_graph_data", "./../" + DIRECTORY_NAME + "/" + str(BLOCK_NUM) + "/acc_graph_data/")
-shutil.copytree("./graph", "./../" + DIRECTORY_NAME + "/" + str(BLOCK_NUM) + "/graph/")
-shutil.copytree("./logs", "./../" + DIRECTORY_NAME + "/" + str(BLOCK_NUM) + "/logs/")
-shutil.copytree("./migrate", "./../" + DIRECTORY_NAME + "/" + str(BLOCK_NUM) + "/migrate/")
+shutil.copytree("./acc_graph_data", "./../" + SHARD_ID + "/" + str(BLOCK_NUM) + "/acc_graph_data/")
+shutil.copytree("./graph", "./../" + SHARD_ID + "/" + str(BLOCK_NUM) + "/graph/")
+shutil.copytree("./logs", "./../" + SHARD_ID + "/" + str(BLOCK_NUM) + "/logs/")
+shutil.copytree("./migrate", "./../" + SHARD_ID + "/" + str(BLOCK_NUM) + "/migrate/")
+shutil.copytree("./model/" + str(BLOCK_NUM) + "/", "./../" + SHARD_ID + "/" + str(BLOCK_NUM) + "/model/")
+
+"""
+# aggregation model
 handler()
 print("model copy !")
-shutil.copytree("./model", "./../" + DIRECTORY_NAME + "/" + str(BLOCK_NUM) + "/model/")
-
+shutil.copytree("./model", "./../" + SHARD_ID + "/" + str(BLOCK_NUM) + "/model/")
+"""
 
 shutil.rmtree('./logs', ignore_errors=True)
 shutil.rmtree('./migrate', ignore_errors=True)
