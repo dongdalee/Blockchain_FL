@@ -1,24 +1,22 @@
 # main
-WORKER_NUM = 2  # total number of  local worker in shard
-TOTAL_ROUND = 1  # total round (number of for loop)
+WORKER_NUM = 10  # total number of  local worker in shard
+TOTAL_ROUND = 5  # total round (number of for loop)
 TRAINING_EPOCH = 1  # training epochs each round
+
+ASYNC_TRAINING = True
 
 RANDOM_TRAINING_EPOCH = False  # setup random training epoch
 MIN_EPOCH = 1
 MAX_EPOCH = 5
 
-TIP_SELECT_ALGO = 'high_accuracy'  # tip selection algorithmn
-
-LEARNING_MEASURE = "f1 score"  # accuracy or f1 score
-
-ASYNC_TRAINING = True
+# tip selection algorithmn
+TIP_SELECT_ALGO = 'high_accuracy'
+LEARNING_MEASURE = "f1 score"
+SIMILARITY = "cosine"
 
 # possion parameter
-LAM = 5
+LAM = 7
 SIZE = TOTAL_ROUND
-
-# tips search space
-SEARCH_SPACE_RANGE = 20
 
 # file save path
 SAVE_SHARD_MODEL_PATH = './model/'
@@ -58,6 +56,6 @@ label = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']  # Mnist
 sub_label = ['0', '1']
 
 # model weight attack
-POISON_WORKER = ['worker0']
+POISON_WORKER = ['worker0', 'worker1']
 GAUSSIAN_MEAN = 0
 GAUSSIAN_SIGMA = 2

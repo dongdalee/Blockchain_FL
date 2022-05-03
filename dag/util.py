@@ -5,6 +5,8 @@ from logging import handlers
 import logging
 import numpy as np
 from sklearn.metrics import confusion_matrix
+from scipy.spatial.distance import cityblock, cosine
+
 
 import dag
 import parameter as p
@@ -178,3 +180,27 @@ np.set_printoptions(precision=2)
 
 def gaussian_distribution(x, mean, sigma):
     return 1 / np.sqrt(2 * np.pi * sigma ** 2) * np.exp(-(x - mean) ** 2 / (2 * sigma ** 2))
+
+
+def vector_similarity(model1, model2):
+    if p.SIMILARITY == "cosine":  # 클 수록 비슷하다.
+        layer1 = 1 - cosine(model1.layer1[0].weight.data.numpy().reshape(-1, ), model2.layer1[0].weight.data.numpy().reshape(-1, ))
+        layer2 = 1 - cosine(model1.layer2[0].weight.data.numpy().reshape(-1, ), model2.layer2[0].weight.data.numpy().reshape(-1, ))
+        layer3 = 1 - cosine(model1.layer3[0].weight.data.numpy().reshape(-1, ), model2.layer3[0].weight.data.numpy().reshape(-1, ))
+        fc1 = 1 - cosine(model1.fc1.weight.data.numpy().reshape(-1, ), model2.fc1.weight.data.numpy().reshape(-1, ))
+        fc2 = 1 - cosine(model1.fc2.weight.data.numpy().reshape(-1, ), model2.fc2.weight.data.numpy().reshape(-1, ))
+        # print(layer1, layer2, layer3, fc1, fc2)
+        return layer1 + layer2 + layer3 + fc1 + fc2
+
+    elif p.SIMILARITY == "manhattann":  # 작을수록 비슷
+        layer1 = cityblock(model1.layer1[0].weight.data.numpy().reshape(-1, ), model2.layer1[0].weight.data.numpy().reshape(-1, ))
+        layer2 = cityblock(model1.layer2[0].weight.data.numpy().reshape(-1, ), model2.layer2[0].weight.data.numpy().reshape(-1, ))
+        layer3 = cityblock(model1.layer3[0].weight.data.numpy().reshape(-1, ), model2.layer3[0].weight.data.numpy().reshape(-1, ))
+        fc1 = cityblock(model1.fc1.weight.data.numpy().reshape(-1, ), model2.fc1.weight.data.numpy().reshape(-1, ))
+        fc2 = cityblock(model1.fc2.weight.data.numpy().reshape(-1, ), model2.fc2.weight.data.numpy().reshape(-1, ))
+        # print(layer1, layer2, layer3, fc1, fc2)
+
+        if (layer1 + layer2 + layer3 + fc1 + fc2) == 0:
+            return 100
+        else:
+            return 1/(layer1 + layer2 + layer3 + fc1 + fc2)

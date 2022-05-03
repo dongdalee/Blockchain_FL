@@ -16,7 +16,7 @@ if device == 'cuda':
     torch.cuda.manual_seed_all(777)
 
 START_BLOCK_NUM = 1
-BLOCK_NUM = 20
+BLOCK_NUM = 10
 
 data_loader = d.trainloader
 test_loader = d.testloader
@@ -119,10 +119,10 @@ def create_eval_dataset(shard_name, block_num):
     accuracy = accuracy_score(actuals, predictions) * 100
     f1 = f1_score(actuals, predictions, average='weighted') * 100
 
+    print("Block Number: {0}".format(block_num))
     print(shard_name, ":", accuracy, f1)
-    print("======================")
     class_accuracy(model)
-
+    print("===================================")
     return [accuracy, f1]
 
 

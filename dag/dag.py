@@ -9,7 +9,7 @@ import wallet
 from worker import Worker
 import transaction as tx
 import parameter as p
-from util import Logger
+from util import Logger, vector_similarity
 
 
 GENESIS_ID = str(uuid4()).replace('-', '')
@@ -21,7 +21,7 @@ class Tangle:
     def __init__(self):
         self.genesis_worker = GENESIS_WORKER
         self.genesis_model = self.genesis_worker.model
-        print("transaction defined")
+        # print("transaction defined")
         self.transactions = {GENESIS_ID: tx.transaction_block(GENESIS_KEYS['public_key'],
                                                               GENESIS_KEYS['public_key'],
                                                               self.genesis_model,
@@ -120,17 +120,21 @@ class Tangle:
                     search_list.append(self.transactions[tx_id])
 
             # cumulative weight를 기준으로 내림차순 정렬을 한다.
-            search_list.sort(key= lambda x: x.cumulative_weight, reverse=True)
+            search_list.sort(key=lambda x: x.cumulative_weight, reverse=True)
 
-            print("|-------------------- Search List TX --------------------|")
+            Logger(str(local_worker.worker_id)).log("|-------------------- Search List TX --------------------|")
             # for target in search_list[:p.SEARCH_SPACE_RANGE]:
             for target in search_list:
                 model = target.get_payload()
                 own_worker_id = target.tx_worker_id
                 accuracy = local_worker.evaluation(model, False)
+                # similarity = vector_similarity(local_worker.model, model)
+
                 model_dict[target.tx_id] = accuracy, own_worker_id
-                print("Worker: {0}, F1 Score: {1:.5f}".format(target.tx_worker_id, accuracy))
-            print("|---------------- total search list: {0} ----------------|".format(len(search_list)))
+                Logger(str(local_worker.worker_id)).log("Worker: {0}, F1 Score: {1:.5f}".format(target.tx_worker_id, accuracy))
+                # model_dict[target.tx_id] = accuracy+similarity, own_worker_id
+                # Logger(str(local_worker.worker_id)).log("Worker: {0}, F1 Score: {1:.5f} {2} Similarity: {3:.2f}".format(target.tx_worker_id, accuracy, p.SIMILARITY, similarity))
+            Logger(str(local_worker.worker_id)).log("|---------------- total search list: {0} ----------------|".format(len(search_list)))
 
             sorted_by_value = sorted(model_dict.items(), key=lambda x: x[1][0], reverse=True)
 
@@ -202,7 +206,7 @@ def proof_of_work(previous_hashes, transaction_dict):
 def generate_transactions(initial=False, initial_count=5, tip_selection_algo='weighted_random_walk', payload=None, local_worker=None):
     if initial:
         for i in range(initial_count):
-            print("genesis transaction created")
+            # print("genesis transaction created")
             keys = wallet.generate_wallet()
             transaction_dict = OrderedDict({
                 'sender_public_key': GENESIS_KEYS['public_key'],

@@ -33,11 +33,27 @@ if __name__ == "__main__":
             worker_id = 'worker' + str(i)
             worker_id_list.append(worker_id)
 
+    def poisson():
+        participate_worker_list = []
+        time_length = np.random.poisson(p.LAM, p.SIZE)
+        for t in time_length:
+            if t > p.WORKER_NUM: t = p.WORKER_NUM
+            participants = sample(worker_id_list, t)
+            participate_worker_list.append(participants)
+
+        return participate_worker_list
+
+
     def handler():
         global graph
 
+        participate_worker = poisson()
+        print("poisson distribution")
+        for participates in participate_worker:
+            print(participates, len(participates))
+
         # poisson distribution used in model weight attack
-        attack_poisson, _ = list(np.histogram(np.random.poisson(p.LAM, p.SIZE), bins=np.array(p.SIZE)))
+        # attack_poisson, _ = list(np.histogram(np.random.poisson(p.LAM, p.SIZE), bins=np.array(p.SIZE)))
 
         # create local worker
         for j in range(0, p.WORKER_NUM):
@@ -45,11 +61,15 @@ if __name__ == "__main__":
             graph = util.plot_accuracy_graph()
 
         for shard_round in range(1, p.TOTAL_ROUND + 1):
+            """
             train_worker_index = list(range(0, p.WORKER_NUM))
-            shuffle(train_worker_index)
+            # shuffle(train_worker_index)
             for i in train_worker_index:
+                
+                
                 # for dealyer loacl worker
                 if p.ASYNC_TRAINING:
+                    # 푸아송 분포 0일때
                     if worker_list[i].time_length[shard_round-1] == 0:
                         Logger(str(worker_list[i].worker_id)).log("<=================== Round: {0} ===================>".format(shard_round))
                         Logger(str(worker_list[i].worker_id)).log(">----------------- {0} was passed -----------------<".format(worker_list[i].worker_id))
@@ -57,7 +77,7 @@ if __name__ == "__main__":
                         continue
 
                 Logger(str(worker_list[i].worker_id)).log("<=================== Round: {0} ===================>".format(shard_round))
-
+                
                 # random training work
                 if p.RANDOM_TRAINING_EPOCH:
                     random_epoch = randint(p.MIN_EPOCH, p.MAX_EPOCH)
@@ -67,9 +87,56 @@ if __name__ == "__main__":
                 elif worker_list[i].worker_id in p.POISON_WORKER and attack_poisson[shard_round-1] > 0:
                     Logger(str(worker_list[i].worker_id)).log("<~~~~~~~~~~~~~~~~~ Poison Attack ~~~~~~~~~~~~~~~~~>".format(shard_round))
                     worker_list[i].weight_poison_attack()
-                else:
+                else: # 학습 부분
                     worker_list[i].total_training_epoch += p.TRAINING_EPOCH
                     worker_list[i].loacl_learning(training_epochs=p.TRAINING_EPOCH)
+                
+                
+                Logger(str(worker_list[i].worker_id)).log("========== [{0}] transaction invoke ==========".format(worker_list[i].worker_id))
+                dag.generate_transactions(tip_selection_algo=p.TIP_SELECT_ALGO, payload=worker_list[i].model, local_worker=worker_list[i])
+                log_worker_accuracy_prev = worker_list[i].evaluation(worker_list[i].model, True)
+                Logger(str(worker_list[i].worker_id)).log("previous worker accuracy: {0}".format(log_worker_accuracy_prev))
+
+                # load two model from blockchain
+                weights = worker_list[i].approve_list[worker_list[i].round]
+                model1, model2 = None, None
+                for j in dag.tangle.transactions:
+                    if weights[0] == dag.tangle.transactions[j].tx_id:
+                        model1 = dag.tangle.transactions[j].payload
+                    elif weights[1] == dag.tangle.transactions[j].tx_id:
+                        model2 = dag.tangle.transactions[j].payload
+
+                # model aggregation
+                worker_list[i].model_aggregation(model1, model2)
+                log_worker_id = worker_list[i].worker_id
+                log_worker_accuracy = worker_list[i].evaluation(worker_list[i].model, False)
+                Logger(str(worker_list[i].worker_id)).log("[---- {0} model aggregation accuracy: {1:.5f} ----]".format(log_worker_id, log_worker_accuracy))
+
+                log_worker_origin_accuracy = worker_list[i].evaluation(worker_list[i].model, False, "origin")
+                Logger(str(worker_list[i].worker_id)).log("[---- {0} model aggregation origin accuracy: {1:.5f} ----]".format(log_worker_id, log_worker_origin_accuracy))
+
+                print(" ")
+                graph.add_value(worker_list[i], log_worker_accuracy, log_worker_origin_accuracy)
+
+                worker_list[i].round += 1
+                """
+
+            train_worker_index = list(range(0, p.WORKER_NUM))
+            shuffle(train_worker_index)
+            for i in train_worker_index:
+                # model weight attack
+                if worker_list[i].worker_id in p.POISON_WORKER and worker_list[i].worker_id in participate_worker[shard_round - 1]:
+                    Logger(str(worker_list[i].worker_id)).log("<~~~~~~~~~~~~~~~~~ Poison Attack ~~~~~~~~~~~~~~~~~>".format(shard_round))
+                    worker_list[i].weight_poison_attack()
+                elif worker_list[i].worker_id in participate_worker[shard_round - 1]:  # 학습 부분
+                    Logger(str(worker_list[i].worker_id)).log("<=================== Round: {0} ===================>".format(shard_round))
+                    worker_list[i].total_training_epoch += p.TRAINING_EPOCH
+                    worker_list[i].loacl_learning(training_epochs=p.TRAINING_EPOCH)
+                else:
+                    Logger(str(worker_list[i].worker_id)).log("<=================== Round: {0} ===================>".format(shard_round))
+                    Logger(str(worker_list[i].worker_id)).log(">----------------- {0} was passed -----------------<".format(worker_list[i].worker_id))
+                    worker_list[i].round += 1
+                    continue
 
                 Logger(str(worker_list[i].worker_id)).log("========== [{0}] transaction invoke ==========".format(worker_list[i].worker_id))
                 dag.generate_transactions(tip_selection_algo=p.TIP_SELECT_ALGO, payload=worker_list[i].model, local_worker=worker_list[i])
@@ -98,7 +165,6 @@ if __name__ == "__main__":
                 graph.add_value(worker_list[i], log_worker_accuracy, log_worker_origin_accuracy)
 
                 worker_list[i].round += 1
-
         # plot graph & show transaction
         # ===============================================================================================================================
         graph.plot_acc_graph()

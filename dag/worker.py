@@ -28,7 +28,7 @@ GAUSSIAN_RANGE = np.arange(-1, 1, 0.00001)
 class Worker:
     def __init__(self, worker_id, current_round, poisoned=False):
         self.worker_id = worker_id
-        print("{0} generate".format(self.worker_id))
+        print("{0} setup".format(self.worker_id))
         self.round = 0
         self.delay = False
         self.poisoned = poisoned
@@ -40,19 +40,27 @@ class Worker:
         self.origin_test_loader = dataloader.origin_test_loader()
 
         self.model = CNN().to(device)
+
+        if current_round-1 > 0:
+            self.model.load_state_dict(torch.load("./model/" + str(current_round - 1) + "/aggregation.pt"), strict=False)
+            print("[{0}]: global model inital".format(self.worker_id))
+
+        """
         try:
             model_list = os.listdir("./model/" + str(current_round-1) + "/")
             if "aggregation.pt" in model_list:
                 print("[{0}]: global model inital".format(self.worker_id))
-                self.model.load_state_dict(torch.load("./model/aggregation.pt"), strict=False)
-        except Exception:
+                self.model.load_state_dict(torch.load("./model/" + str(current_round-1) + "/aggregation.pt"), strict=False)
+        except Exception as e:
+            print("Error {0}".format(e))
             pass
+        """
 
         self.criterion = nn.CrossEntropyLoss()
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=p.LEARNING_RATE)
         self.total_batch = len(self.data_loader)
-        self.time_length, _ = list(np.histogram(np.random.poisson(p.LAM, p.SIZE), bins=np.array(p.SIZE))) # poisson 분포
-        print("WorkerId: {0}, time_length: {1}".format(self.worker_id, self.time_length))
+        # self.time_length, _ = list(np.histogram(np.random.poisson(p.LAM, p.SIZE), bins=np.array(p.SIZE))) # poisson 분포
+        # print("WorkerId: {0}, time_length: {1}".format(self.worker_id, self.time_length))
 
 
     def loacl_learning(self, training_epochs=0):

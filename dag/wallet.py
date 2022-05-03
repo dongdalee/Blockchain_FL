@@ -11,10 +11,10 @@ from Crypto.Hash import SHA256
 WALLET_LIST = []
 
 def generate_wallet(inital = False):
-    if not inital:
-        print("================= wallet created =================")
-    else:
-        print("============= Genesis wallet created =============")
+    # if not inital:
+    #     print("================= wallet created =================")
+    # else:
+    #     print("============= Genesis wallet created =============")
 
     random_gen = Crypto.Random.new().read
     private_key = RSA.generate(2048, random_gen)
