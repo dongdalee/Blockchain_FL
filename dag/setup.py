@@ -3,10 +3,12 @@ import os
 import torch
 import warnings
 from model import CNN
+from round_checker import model_loader
 from parameter import SHARD_ID
 warnings.filterwarnings('ignore')
 
-BLOCK_NUM = input("Input Block Number: ")
+# BLOCK_NUM = input("Input Block Number: ")
+BLOCK_NUM = max(model_loader())
 
 """
 SAVE_MODEL_PATH = "./model/"
@@ -89,6 +91,7 @@ def handler():
     
     torch.save(aggregation_model.state_dict(), PATH)
 """
+
 
 # 실험 데이터 복사 =========================================================================================================
 if SHARD_ID not in os.listdir("./../"):
