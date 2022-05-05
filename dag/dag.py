@@ -119,20 +119,9 @@ class Tangle:
                 else:
                     search_list.append(self.transactions[tx_id])
 
-            while True:
-                # if len(search_list) < 2:
-                if len(search_list) > 2:
-                    break
-                print(search_list)
-                print("widen search space")
-                widen_search_space += 1
-
+            if len(search_list) < 2:
                 for i, tx_id in enumerate(self.transactions):
-                    if i / p.WORKER_NUM < local_worker.round - widen_search_space:
-                        continue
-                    else:
-                        search_list.append(self.transactions[tx_id])
-
+                    search_list.append(self.transactions[tx_id])
 
 
             # cumulative weight를 기준으로 내림차순 정렬을 한다.
