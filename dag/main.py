@@ -200,7 +200,8 @@ if __name__ == "__main__":
         receiver.runReceiver()
 
         path = p.SAVE_SHARD_MODEL_PATH + str(current_round) + "/"
-        file_list = os.listdir(path)
+        # file_list = os.listdir(path)
+        file_list = ["shard1.pt", "shard2.pt", "shard3.pt", "shard4.pt", "shard5.pt"]
         if ".DS_Store" in file_list:
             file_list.remove(".DS_Store")
         if "aggregation.pt" in file_list:
