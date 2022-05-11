@@ -192,7 +192,11 @@ if __name__ == "__main__":
 
         dag.save_shard_global_model(current_round)
 
-        sender.send_file(p.SERVER_HOST, p.SERVER_PORT, p.SAVE_SHARD_MODEL_PATH + str(current_round) + "/" + p.SHARD_ID + ".pt")
+        # sender.send_file(p.SERVER_HOST, p.SERVER_PORT, p.SAVE_SHARD_MODEL_PATH + str(current_round) + "/" + p.SHARD_ID + ".pt")
+
+        for i in range(p.UPLOAD_MODEL_NUM):
+            sender.send_file(p.SERVER_HOST, p.SERVER_PORT, p.SAVE_SHARD_MODEL_PATH + str(current_round) + "/" + p.SHARD_ID + "_" + str(i) + ".pt")
+
         receiver.runReceiver()
 
         path = p.SAVE_SHARD_MODEL_PATH + str(current_round) + "/"

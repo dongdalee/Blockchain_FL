@@ -40,7 +40,7 @@ def binder(client_socket, addr):
             lock.release()
             print(shard_model_list)
 
-        if len(shard_model_list) == p.SHARD_NUM:
+        if len(shard_model_list) == p.SHARD_NUM * p.UPLOAD_MODEL_NUM:
             print("All shard update model")
             return "exit"
         else:

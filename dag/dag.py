@@ -21,7 +21,6 @@ class Tangle:
     def __init__(self):
         self.genesis_worker = GENESIS_WORKER
         self.genesis_model = self.genesis_worker.model
-        # print("transaction defined")
         self.transactions = {GENESIS_ID: tx.transaction_block(GENESIS_KEYS['public_key'],
                                                               GENESIS_KEYS['public_key'],
                                                               self.genesis_model,
@@ -38,10 +37,8 @@ class Tangle:
 
 
     def add_transaction(self, transaction: tx.transaction_block):
-        # print("transaction Appended: ", transaction.tx_id)
         self.transactions[transaction.tx_id] = transaction
         self.add_edges(transaction)
-        # self.update_cumulative_weights(transaction)
 
 
     def add_edges(self, transaction: tx.transaction_block):
@@ -133,12 +130,14 @@ class Tangle:
                 model = target.get_payload()
                 own_worker_id = target.tx_worker_id
                 accuracy = local_worker.evaluation(model, False)
-                # similarity = vector_similarity(local_worker.model, model)
+                if p.SIMILARITY == "cosine":
+                    similarity = vector_similarity(local_worker.model, model)
+                    model_dict[target.tx_id] = accuracy + similarity, own_worker_id
+                    Logger(str(local_worker.worker_id)).log("Worker: {0}, F1 Score: {1:.5f} {2} Similarity: {3:.2f}".format(target.tx_worker_id, accuracy, p.SIMILARITY, similarity))
+                else:
+                    model_dict[target.tx_id] = accuracy, own_worker_id
+                    Logger(str(local_worker.worker_id)).log("Worker: {0}, F1 Score: {1:.5f}".format(target.tx_worker_id, accuracy))
 
-                model_dict[target.tx_id] = accuracy, own_worker_id
-                Logger(str(local_worker.worker_id)).log("Worker: {0}, F1 Score: {1:.5f}".format(target.tx_worker_id, accuracy))
-                # model_dict[target.tx_id] = accuracy+similarity, own_worker_id
-                # Logger(str(local_worker.worker_id)).log("Worker: {0}, F1 Score: {1:.5f} {2} Similarity: {3:.2f}".format(target.tx_worker_id, accuracy, p.SIMILARITY, similarity))
             Logger(str(local_worker.worker_id)).log("|---------------- total search list: {0} ----------------|".format(len(search_list)))
 
             sorted_by_value = sorted(model_dict.items(), key=lambda x: x[1][0], reverse=True)
@@ -173,16 +172,7 @@ class Tangle:
             tips_list = random.sample(list(self.transactions.keys()), 2)
             local_worker.approve_list[local_worker.round] = tips_list
             return tips_list
-    """
-    def update_cumulative_weights(self, current_node):
-        if current_node.tx_id is GENESIS_ID:
-            current_node.cumulative_weight += 1
-        else:
-            current_node.cumulative_weight += 1
-            a, b = current_node.approved_tx[0]
-            self.update_cumulative_weights(self.transactions[a])
-            self.update_cumulative_weights(self.transactions[b])
-    """
+
 
 tangle = Tangle()
 
@@ -254,27 +244,6 @@ def generate_transactions(initial=False, initial_count=5, tip_selection_algo='we
             tx_worker_id=local_worker.worker_id)
         tangle.add_transaction(transaction)
 
-"""
-# accuracy가 가장 높은 모델을 가진 TX을 선택하고 저장한다.
-def save_shard_global_model():
-    model_dict = {}
-    for i, tx_id in enumerate(tangle.transactions):
-        if i >= (p.WORKER_NUM * (p.TOTAL_ROUND-1))-5:
-            model = tangle.transactions[tx_id].get_payload()
-            accuracy = tangle.genesis_worker.evaluation(model, False)
-            model_dict[tangle.transactions[tx_id].tx_id] = accuracy
-        else:
-            continue
-
-    max_accuracy_model_tx_id = max(model_dict, key=lambda i: model_dict[i])
-    max_accuracy_model = tangle.transactions[max_accuracy_model_tx_id].get_payload()
-
-    torch.save(max_accuracy_model.state_dict(), p.SAVE_SHARD_MODEL_PATH)
-    print(" ")
-    print("save shard model: {0},    accuracy: {1}".format(max_accuracy_model_tx_id, tangle.genesis_worker.evaluation(max_accuracy_model, True)))
-
-    return max_accuracy_model
-"""
 
 def save_shard_global_model(current_round):
     model_dict = {}
@@ -302,17 +271,31 @@ def save_shard_global_model(current_round):
         else:
             continue
 
-    print("cumulative weight:", model_dict)
+    """
+    # high cumulative weight model
+    # print("cumulative weight:", model_dict)
     max_cumulative_weight_model_tx_id = max(model_dict, key=lambda i: model_dict[i])
     max_cumulative_weight_model = tangle.transactions[max_cumulative_weight_model_tx_id].get_payload()
-    print("acc weight:", model_acc_dict)
+    """
+
+    # high cumulative weight model
+    descending_cumulative_weight = sorted(model_dict.items(), key=lambda x: x[1], reverse=True)
+    upload_model_tx_id = descending_cumulative_weight[:p.UPLOAD_MODEL_NUM]
+    print(upload_model_tx_id)
+    # high accuracy model
+    # print("acc weight:", model_acc_dict)
     max_accuracy_model_tx_id = max(model_acc_dict, key=lambda i: model_acc_dict[i])
     max_accuracy_model = tangle.transactions[max_accuracy_model_tx_id].get_payload()
 
-    torch.save(max_cumulative_weight_model.state_dict(), p.SAVE_SHARD_MODEL_PATH + str(current_round) + "/" + p.SHARD_ID + ".pt")
+    for index, tx_id_tuple in enumerate(upload_model_tx_id):
+        tx_id = tx_id_tuple[0]
+        top_cumulative_weight_model = tangle.transactions[tx_id].get_payload()
+        torch.save(top_cumulative_weight_model.state_dict(), p.SAVE_SHARD_MODEL_PATH + str(current_round) + "/" + p.SHARD_ID + "_" + str(index) + ".pt") # shard1_0.pt, shard1_1.pt
+        Logger(str("transaction")).log("Sort by Cumulative Weight: save shard model: {0} | Worker ID: {1} | Accuracy: {2} | Cumulative Weight {3}".format(tx_id, tangle.transactions[tx_id].tx_worker_id, tangle.genesis_worker.evaluation(top_cumulative_weight_model, True), tangle.transactions[tx_id].cumulative_weight))
+    # torch.save(max_cumulative_weight_model.state_dict(), p.SAVE_SHARD_MODEL_PATH + str(current_round) + "/" + p.SHARD_ID + ".pt")
 
     print(" ")
-    Logger(str("transaction")).log("Sort by Cumulative Weight: save shard model: {0} | Worker ID: {1} | Accuracy: {2} | Cumulative Weight {3}".format(max_cumulative_weight_model_tx_id, tangle.transactions[max_cumulative_weight_model_tx_id].tx_worker_id, tangle.genesis_worker.evaluation(max_cumulative_weight_model, True), tangle.transactions[max_cumulative_weight_model_tx_id].cumulative_weight))
+    # Logger(str("transaction")).log("Sort by Cumulative Weight: save shard model: {0} | Worker ID: {1} | Accuracy: {2} | Cumulative Weight {3}".format(max_cumulative_weight_model_tx_id, tangle.transactions[max_cumulative_weight_model_tx_id].tx_worker_id, tangle.genesis_worker.evaluation(max_cumulative_weight_model, True), tangle.transactions[max_cumulative_weight_model_tx_id].cumulative_weight))
     Logger(str("transaction")).log("Sort by Accuracy: save shard model: {0} | Worker ID: {1} | Accuracy: {2}".format(max_accuracy_model_tx_id, tangle.transactions[max_accuracy_model_tx_id].tx_worker_id, tangle.genesis_worker.evaluation(max_accuracy_model, True)))
 
-    return max_cumulative_weight_model
+    # return max_cumulative_weight_model

@@ -1,13 +1,15 @@
 import os
 from model import CNN
+import random
 from dataloader import get_dataloader
 from sklearn.metrics import f1_score, accuracy_score
 import torch
 from util import variable_name
-from parameter import WORKER_DATA, LEARNING_MEASURE
+from itertools import product
+from parameter import WORKER_DATA, LEARNING_MEASURE, SHARD_LIST, UPLOAD_MODEL_NUM
+from util import Logger
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-SAVE_MODEL_PATH = "./model/"+str(round)+"/"
 
 
 def load_model(load_path):
@@ -15,28 +17,15 @@ def load_model(load_path):
     model.load_state_dict(torch.load(load_path), strict=False)
     return model
 
-def test_model(model):
-    testloader = get_dataloader("all")
 
-    # 모델 Accuracy, F1 Score 출력
-    model.eval()
-    actuals = []
-    predictions = []
-    with torch.no_grad():
-        for data, target in testloader:
-            data, target = data.to(device), target.to(device)
-            output = model(data)
-            prediction = output.argmax(dim=1, keepdim=True)
-            actuals.extend(target.view_as(prediction))
-            predictions.extend(prediction)
-    actuals, predictions = [i.item() for i in actuals], [i.item() for i in predictions]
+def load_worker(shard):
+    workers = os.listdir("./data/" + shard + "/")
+    for worker in workers:
+        if "worker" not in worker:
+            workers.remove(worker)
 
-    accuracy = round(accuracy_score(actuals, predictions) * 100, 2)
-    f1 = round(f1_score(actuals, predictions, average='weighted') * 100, 2)
+    return workers
 
-    print(" ")
-    print('Accuracy: {0:.5f}'.format(accuracy))
-    print('F1: {0:.5f}'.format(f1))
 
 def model_fraction(model, numerator, denominator):
     model.layer1[0].weight.data = numerator * model.layer1[0].weight.data / denominator
@@ -53,6 +42,7 @@ def model_fraction(model, numerator, denominator):
 
     model.fc2.weight.data = numerator * model.fc2.weight.data / denominator
     model.fc2.bias.data = numerator * model.fc2.bias.data / denominator
+
 
 def add_model(*models):
     fed_add_model = CNN().to(device)
@@ -92,13 +82,14 @@ def add_model(*models):
 
 
 class Worker:
-    def __init__(self, *_models, _shard, _worker):
+    def __init__(self, *_models, _shard, _worker, _current_round):
         self.models = _models
         self.testloader = get_dataloader(str(_shard), _worker)
         self.ballot = {}
+        self.current_round = _current_round
 
-    def test_global_model(self):
-        for model in self.models:
+    def test_global_model(self, model_id_list):
+        for index, model in enumerate(self.models):
             model.eval()
             actuals = []
             predictions = []
@@ -113,13 +104,13 @@ class Worker:
 
             if LEARNING_MEASURE == "accuracy":
                 accuracy = round(accuracy_score(actuals, predictions) * 100, 2)
-                # print('Accuracy: {0:.5f}'.format(accuracy))
             elif LEARNING_MEASURE == "f1 score":
                 accuracy = round(f1_score(actuals, predictions, average='weighted') * 100, 2)
-                # print('F1: {0:.5f}'.format(f1))
 
-            model_name = variable_name(model)
-            self.ballot[model_name] = accuracy
+            # model_name = variable_name(model)
+            # print("Model {0} Accuracy: {1}".format(model_id_list[index], accuracy))
+            Logger("server_logs" + str(self.current_round)).log("Model {0} Accuracy: {1}".format(model_id_list[index], accuracy))
+            self.ballot[model_id_list[index]] = accuracy
 
         max(self.ballot, key=self.ballot.get)
         elected = ''.join([k for k, v in self.ballot.items() if max(self.ballot.values()) == v][0])
@@ -127,6 +118,236 @@ class Worker:
         return elected
 
 
+class Voting:
+    def __init__(self, _current_round):
+        self.first_voting = True
+        self.voting_committee = []
+        self.first_combination_models = []
+        self.first_combination_model_names = []
+        self.current_round = _current_round
+        self.SAVE_MODEL_PATH = "./model/" + str(self.current_round) + "/"
+
+    def model_voter(self):
+        if "g1.pt" in os.listdir(self.SAVE_MODEL_PATH):
+            self.first_voting = False
+
+        if self.first_voting:
+            # print("first voting")
+            Logger("server_logs" + str(self.current_round)).log("first voting")
+            first_shard_models = []
+            first_shard_models_name = []
+            second_shard_models = []
+            second_shard_models_name = []
+            input_models = []
+            input_models_name = []
+            voting_result = {}
+
+            # 샤드 목록중 랜덤하게 2개의 샤드를 선택하고 선택된 샤드는 리스트에서 지운다.
+            random_shards = random.sample(SHARD_LIST, 2)
+            SHARD_LIST.remove(random_shards[0])
+            SHARD_LIST.remove(random_shards[1])
+            self.voting_committee.append(random_shards[0])
+            self.voting_committee.append(random_shards[1])
+
+            # 1.선택된 샤드에서 업데이트된 모델을 가져오고 모델의 이름을 생성한다.
+            for index in range(UPLOAD_MODEL_NUM):
+                # first shard
+                first_shard_models.append(load_model(self.SAVE_MODEL_PATH + random_shards[0] + "_" + str(index) + ".pt"))
+                first_shard_models_name.append(random_shards[0] + "_" + str(index))
+                # second shard
+                second_shard_models.append(load_model(self.SAVE_MODEL_PATH + random_shards[1] + "_" + str(index) + ".pt"))
+                second_shard_models_name.append(random_shards[1] + "_" + str(index))
+
+            # model combination을 위해 input_models 리스트에 랜덤으로 선택된 샤드들을 넣는다. -> [[], []] 2차원 리스트
+            input_models.append(first_shard_models)
+            input_models.append(second_shard_models)
+            input_models_name.append(first_shard_models_name)
+            input_models_name.append(second_shard_models_name)
+
+            # 샤드 모델 combination
+            combination_models = list(product(*input_models))
+            combination_models_name = list(product(*input_models_name))
+            # print("Selected Shard Models: {0}".format(input_models_name))
+            # print("Combination model list: {0} length {1}".format(combination_models_name, len(combination_models)))
+            Logger("server_logs" + str(self.current_round)).log("Selected Shard Models: {0}".format(input_models_name))
+            Logger("server_logs" + str(self.current_round)).log("Combination model list: {0} length {1}".format(combination_models_name, len(combination_models)))
+
+            # 조합된 모델 FedAsyncAvg
+            for models in combination_models:
+                model_fraction(models[0], 1, 5)
+                model_fraction(models[1], 1, 5)
+                model = add_model(models[0], models[1])
+                model_fraction(model, 5, 2)
+
+                self.first_combination_models.append(model)
+
+            # 조합된 모델 이름 생성
+            for names in combination_models_name:
+                model_name = names[0] + "+" + names[1]
+
+                self.first_combination_model_names.append(model_name)
+                voting_result[model_name] = 0
+
+            # 해당 샤드의 worker 수를 가져오기 위해 사용
+            shard1_worker_length = len(load_worker(random_shards[0]))
+            shard2_worker_length = len(load_worker(random_shards[1]))
+
+            # print("Voting Committee: {0}".format(self.voting_committee))
+            Logger("server_logs" + str(self.current_round)).log("Voting Committee: {0}".format(self.voting_committee))
+
+            # print("Voting Shard: {0}".format(random_shards[0]))
+            Logger("server_logs" + str(self.current_round)).log("Voting Shard: {0}".format(random_shards[0]))
+            for worker_id in range(shard1_worker_length):
+                # print("=============== Worker{0} ===============".format(worker_id))
+                Logger("server_logs" + str(self.current_round)).log("=============== Worker{0} ===============".format(worker_id))
+                worker = Worker(*self.first_combination_models, _shard=random_shards[0], _worker=worker_id, _current_round=self.current_round)
+                elect_result = worker.test_global_model(self.first_combination_model_names)
+                voting_result[elect_result] += 1
+                # print("<----- elected: {0} ----->\n".format(elect_result))
+                Logger("server_logs" + str(self.current_round)).log("<----- elected: {0} ----->\n".format(elect_result))
+
+            # print("Voting Shard: {0}".format(random_shards[1]))
+            Logger("server_logs" + str(self.current_round)).log("Voting Shard: {0}".format(random_shards[1]))
+            for worker_id in range(shard2_worker_length):
+                # print("=============== Worker{0} ===============".format(worker_id))
+                Logger("server_logs" + str(self.current_round)).log("=============== Worker{0} ===============".format(worker_id))
+                worker = Worker(*self.first_combination_models, _shard=random_shards[1], _worker=worker_id, _current_round=self.current_round)
+                elect_result = worker.test_global_model(self.first_combination_model_names)
+                voting_result[elect_result] += 1
+                # print("<----- elected: {0} ----->\n".format(elect_result))
+                Logger("server_logs" + str(self.current_round)).log("<----- elected: {0} ----->\n".format(elect_result))
+
+            # print("After Voting: {0}".format(voting_result))
+            Logger("server_logs" + str(self.current_round)).log("After Voting: {0}".format(voting_result))
+            max(voting_result, key=voting_result.get)
+            elected = ''.join([k for k, v in voting_result.items() if max(voting_result.values()) == v][0])
+            # print(elected)
+            Logger("server_logs" + str(self.current_round)).log(elected)
+
+            elected_model_index = self.first_combination_model_names.index(elected)
+            using_model = elected.split("+")
+            elected_model = self.first_combination_models[elected_model_index]
+            model_fraction(elected_model, 2, 5)
+
+            torch.save(elected_model.state_dict(), "./model/" + str(self.current_round) + "/g1.pt")
+            first_using_model = load_model(self.SAVE_MODEL_PATH + using_model[0] + ".pt")
+            second_using_model = load_model(self.SAVE_MODEL_PATH + using_model[1] + ".pt")
+            torch.save(first_using_model.state_dict(), "./model/" + str(self.current_round) + "/" + using_model[0][:6] + ".pt")
+            torch.save(second_using_model.state_dict(), "./model/" + str(self.current_round) + "/" + using_model[1][:6] + ".pt")
+
+            return
+        else:
+            shard_models = []
+            shard_models_name = []
+            input_models = []
+            input_models_name = []
+            ballot_combination_model = []
+            ballot_combination_model_names = []
+            voting_result = {}
+
+            # print("model voting")
+            Logger("server_logs" + str(self.current_round)).log("model voting")
+            model_list = os.listdir(self.SAVE_MODEL_PATH)
+
+            # 이전 투표를 통해 얻은 글로벌 모델을 가져온다.
+            if "g3.pt" in model_list:
+                # print("load model g3")
+                Logger("server_logs" + str(self.current_round)).log("load model g3")
+                pre_model = [load_model(self.SAVE_MODEL_PATH + "g3.pt")]
+                pre_model_name = ["g3"]
+                save_model_name = "aggregation"
+            elif "g2.pt" in model_list:
+                # print("load model g2")
+                Logger("server_logs" + str(self.current_round)).log("load model g2")
+                pre_model = [load_model(self.SAVE_MODEL_PATH + "g2.pt")]
+                pre_model_name = ["g2"]
+                save_model_name = "g3"
+            else:
+                # print("load model g1")
+                Logger("server_logs" + str(self.current_round)).log("load model g1")
+                pre_model = [load_model(self.SAVE_MODEL_PATH + "g1.pt")]
+                pre_model_name = ["g1"]
+                save_model_name = "g2"
+
+            # 이전에 투표에서 참여한 모델을 제외하고 랜덤하게 샤드를 선택한다.
+            random_shards = random.sample(SHARD_LIST, 1)
+            SHARD_LIST.remove(random_shards[0])
+            self.voting_committee.append(random_shards[0])
+
+            # 이전 모델과 새롭게 선택된 샤드의 모델을 combination하기 위해 리스트에 이전 모델과 모델 이름을 추가한다.
+            input_models.append(pre_model)
+            input_models_name.append(pre_model_name)
+
+            # 1.선택된 샤드에서 업데이트된 모델을 가져오고 모델의 이름을 생성한다.
+            for index in range(UPLOAD_MODEL_NUM):
+                # first shard
+                shard_models.append(load_model(self.SAVE_MODEL_PATH + random_shards[0] + "_" + str(index) + ".pt"))
+                shard_models_name.append(random_shards[0] + "_" + str(index))
+
+            # model combination을 위해 input_models 리스트에 랜덤으로 선택된 샤드들을 넣는다. -> [[], []] 2차원 리스트
+            input_models.append(shard_models)
+            input_models_name.append(shard_models_name)
+
+            # 샤드 모델 combination
+            combination_models = list(product(*input_models))
+            combination_models_name = list(product(*input_models_name))
+            # print("Selected Shard Models: {0}".format(input_models_name))
+            # print("Combination model list: {0} length {1}".format(combination_models_name, len(combination_models)))
+            Logger("server_logs" + str(self.current_round)).log("Selected Shard Models: {0}".format(input_models_name))
+            Logger("server_logs" + str(self.current_round)).log("Combination model list: {0} length {1}".format(combination_models_name, len(combination_models)))
+
+            # 조합된 모델 FedAsyncAvg
+            for models in combination_models:
+                model_fraction(models[1], 1, 5)
+                model = add_model(models[0], models[1])
+                model_fraction(model, 5, len(self.voting_committee))
+
+                ballot_combination_model.append(model)
+
+            # 조합된 모델 이름 생성
+            for names in combination_models_name:
+                model_name = names[0] + "+" + names[1]
+
+                ballot_combination_model_names.append(model_name)
+                voting_result[model_name] = 0
+
+            # print("Voting Committee: {0}".format(self.voting_committee))
+            Logger("server_logs" + str(self.current_round)).log("Voting Committee: {0}".format(self.voting_committee))
+            for shard in self.voting_committee:
+                # voting committee에 있는 각 샤드들의 worker 수를 가져온다.
+                worker_length = len(load_worker(shard))
+
+                # print("Voting Shard: {0}".format(shard))
+                Logger("server_logs" + str(self.current_round)).log("Voting Shard: {0}".format(shard))
+                for worker_id in range(worker_length):
+                    # print("=============== Worker{0} ===============".format(worker_id))
+                    Logger("server_logs" + str(self.current_round)).log("=============== Worker{0} ===============".format(worker_id))
+                    worker = Worker(*ballot_combination_model, _shard=random_shards[0], _worker=worker_id, _current_round=self.current_round)
+                    elect_result = worker.test_global_model(ballot_combination_model_names)
+                    voting_result[elect_result] += 1
+                    # print("<----- elected: {0} ----->\n".format(elect_result))
+                    Logger("server_logs" + str(self.current_round)).log("<----- elected: {0} ----->\n".format(elect_result))
+
+            # print("After Voting: {0}".format(voting_result))
+            Logger("server_logs" + str(self.current_round)).log("After Voting: {0}".format(voting_result))
+            max(voting_result, key=voting_result.get)
+            elected = ''.join([k for k, v in voting_result.items() if max(voting_result.values()) == v][0])
+            # print(elected)
+            Logger("server_logs" + str(self.current_round)).log(elected)
+
+            elected_model_index = ballot_combination_model_names.index(elected)
+            using_model_name = elected.split("+")
+            elected_model = ballot_combination_model[elected_model_index]
+            model_fraction(elected_model, len(self.voting_committee), 5)
+
+            torch.save(elected_model.state_dict(), "./model/" + str(self.current_round) + "/" + save_model_name + ".pt")
+
+            using_model = load_model(self.SAVE_MODEL_PATH + using_model_name[1] + ".pt")
+            torch.save(using_model.state_dict(), "./model/" + str(self.current_round) + "/" + using_model_name[1][:6] + ".pt")
+
+            return
+
+"""
 class ModelCombinator:
     def __init__(self, _round, _mode, _model=None):
         self.round = _round
@@ -352,3 +573,4 @@ class Voting:
             self.combinator_class.aggregator(elected)
 
             return
+"""

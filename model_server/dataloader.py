@@ -41,19 +41,19 @@ def get_dataloader(type, worker=None):
     # mnist 데이터 가져오기 =================================================================
     if type == "all":
         DATA_PATH_TESTING_LIST = glob('./data/test/*/*.png')
-    elif type == "1":
+    elif type == "shard1":
         # 0, 1
         DATA_PATH_TESTING_LIST = glob('./data/shard1/worker'+str(worker)+'/test/*/*.png')
-    elif type == "2":
+    elif type == "shard2":
         # 2, 3
         DATA_PATH_TESTING_LIST = glob('./data/shard2/worker' + str(worker) + '/test/*/*.png')
-    elif type == "3":
+    elif type == "shard3":
         # 4, 5
         DATA_PATH_TESTING_LIST = glob('./data/shard3/worker' + str(worker) + '/test/*/*.png')
-    elif type == "4":
+    elif type == "shard4":
         # 6, 7
         DATA_PATH_TESTING_LIST = glob('./data/shard4/worker' + str(worker) + '/test/*/*.png')
-    elif type == "5":
+    elif type == "shard5":
         # 8, 9
         DATA_PATH_TESTING_LIST = glob('./data/shard5/worker' + str(worker) + '/test/*/*.png')
     # ===================================================================================
