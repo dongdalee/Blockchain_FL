@@ -81,6 +81,58 @@ def add_model(*models):
     return fed_add_model
 
 
+def fed_avg(*models):
+    fed_avg_model = CNN().to(device)
+
+    fed_avg_model.layer1[0].weight.data.fill_(0.0)
+    fed_avg_model.layer1[0].bias.data.fill_(0.0)
+
+    fed_avg_model.layer2[0].weight.data.fill_(0.0)
+    fed_avg_model.layer2[0].bias.data.fill_(0.0)
+
+    fed_avg_model.layer3[0].weight.data.fill_(0.0)
+    fed_avg_model.layer3[0].bias.data.fill_(0.0)
+
+    fed_avg_model.fc1.weight.data.fill_(0.0)
+    fed_avg_model.fc1.bias.data.fill_(0.0)
+
+    fed_avg_model.fc2.weight.data.fill_(0.0)
+    fed_avg_model.fc2.bias.data.fill_(0.0)
+
+    for model in models:
+        fed_avg_model.layer1[0].weight.data += model.layer1[0].weight.data
+        fed_avg_model.layer1[0].bias.data += model.layer1[0].bias.data
+
+        fed_avg_model.layer2[0].weight.data += model.layer2[0].weight.data
+        fed_avg_model.layer2[0].bias.data += model.layer2[0].bias.data
+
+        fed_avg_model.layer3[0].weight.data += model.layer3[0].weight.data
+        fed_avg_model.layer3[0].bias.data += model.layer3[0].bias.data
+
+        fed_avg_model.fc1.weight.data += model.fc1.weight.data
+        fed_avg_model.fc1.bias.data += model.fc1.bias.data
+
+        fed_avg_model.fc2.weight.data += model.fc2.weight.data
+        fed_avg_model.fc2.bias.data += model.fc2.bias.data
+
+    fed_avg_model.layer1[0].weight.data = fed_avg_model.layer1[0].weight.data / len(models)
+    fed_avg_model.layer1[0].bias.data = fed_avg_model.layer1[0].bias.data / len(models)
+
+    fed_avg_model.layer2[0].weight.data = fed_avg_model.layer2[0].weight.data / len(models)
+    fed_avg_model.layer2[0].bias.data = fed_avg_model.layer2[0].bias.data / len(models)
+
+    fed_avg_model.layer3[0].weight.data = fed_avg_model.layer3[0].weight.data / len(models)
+    fed_avg_model.layer3[0].bias.data = fed_avg_model.layer3[0].bias.data / len(models)
+
+    fed_avg_model.fc1.weight.data = fed_avg_model.fc1.weight.data / len(models)
+    fed_avg_model.fc1.bias.data = fed_avg_model.fc1.bias.data / len(models)
+
+    fed_avg_model.fc2.weight.data = fed_avg_model.fc2.weight.data / len(models)
+    fed_avg_model.fc2.bias.data = fed_avg_model.fc2.bias.data / len(models)
+
+    return fed_avg_model
+
+
 class Worker:
     def __init__(self, *_models, _shard, _worker, _current_round):
         self.models = _models
@@ -116,8 +168,37 @@ class Worker:
         elected = ''.join([k for k, v in self.ballot.items() if max(self.ballot.values()) == v][0])
 
         return elected
+    """
 
+    def test_global_model(self):
+        for index, model in enumerate(self.models):
+            model.eval()
+            actuals = []
+            predictions = []
+            with torch.no_grad():
+                for data, target in self.testloader:
+                    data, target = data.to(device), target.to(device)
+                    output = model(data)
+                    prediction = output.argmax(dim=1, keepdim=True)
+                    actuals.extend(target.view_as(prediction))
+                    predictions.extend(prediction)
+            actuals, predictions = [i.item() for i in actuals], [i.item() for i in predictions]
 
+            if LEARNING_MEASURE == "accuracy":
+                accuracy = round(accuracy_score(actuals, predictions) * 100, 2)
+            elif LEARNING_MEASURE == "f1 score":
+                accuracy = round(f1_score(actuals, predictions, average='weighted') * 100, 2)
+
+            model_name = variable_name(model)
+            # print("Model {0} Accuracy: {1}".format(model_id_list[index], accuracy))
+            Logger("server_logs" + str(self.current_round)).log("Model {0} Accuracy: {1}".format(model_id_list[index], accuracy))
+            self.ballot[model_name] = accuracy
+
+        max(self.ballot, key=self.ballot.get)
+        elected = ''.join([k for k, v in self.ballot.items() if max(self.ballot.values()) == v][0])
+
+        return elected
+        """
 class Voting:
     def __init__(self, _current_round):
         self.first_voting = True
@@ -152,10 +233,17 @@ class Voting:
             # 1.선택된 샤드에서 업데이트된 모델을 가져오고 모델의 이름을 생성한다.
             for index in range(UPLOAD_MODEL_NUM):
                 # first shard
-                first_shard_models.append(load_model(self.SAVE_MODEL_PATH + random_shards[0] + "_" + str(index) + ".pt"))
+                model1 = load_model(self.SAVE_MODEL_PATH + random_shards[0] + "_" + str(index) + ".pt")
+                model_fraction(model1, 1, 5)
+                # first_shard_models.append(load_model(self.SAVE_MODEL_PATH + random_shards[0] + "_" + str(index) + ".pt"))
+                first_shard_models.append(model1)
                 first_shard_models_name.append(random_shards[0] + "_" + str(index))
+
                 # second shard
-                second_shard_models.append(load_model(self.SAVE_MODEL_PATH + random_shards[1] + "_" + str(index) + ".pt"))
+                model2 = load_model(self.SAVE_MODEL_PATH + random_shards[1] + "_" + str(index) + ".pt")
+                model_fraction(model2, 1, 5)
+                # second_shard_models.append(load_model(self.SAVE_MODEL_PATH + random_shards[1] + "_" + str(index) + ".pt"))
+                second_shard_models.append(model2)
                 second_shard_models_name.append(random_shards[1] + "_" + str(index))
 
             # model combination을 위해 input_models 리스트에 랜덤으로 선택된 샤드들을 넣는다. -> [[], []] 2차원 리스트
@@ -174,8 +262,8 @@ class Voting:
 
             # 조합된 모델 FedAsyncAvg
             for models in combination_models:
-                model_fraction(models[0], 1, 5)
-                model_fraction(models[1], 1, 5)
+                # model_fraction(models[0], 1, 5)
+                # model_fraction(models[1], 1, 5)
                 model = add_model(models[0], models[1])
                 model_fraction(model, 5, 2)
 
@@ -194,6 +282,7 @@ class Voting:
 
             # print("Voting Committee: {0}".format(self.voting_committee))
             Logger("server_logs" + str(self.current_round)).log("Voting Committee: {0}".format(self.voting_committee))
+            print(len(self.voting_committee))
 
             # print("Voting Shard: {0}".format(random_shards[0]))
             Logger("server_logs" + str(self.current_round)).log("Voting Shard: {0}".format(random_shards[0]))
@@ -225,8 +314,8 @@ class Voting:
             Logger("server_logs" + str(self.current_round)).log(elected)
 
             elected_model_index = self.first_combination_model_names.index(elected)
-            using_model = elected.split("+")
             elected_model = self.first_combination_models[elected_model_index]
+            using_model = elected.split("+")
             model_fraction(elected_model, 2, 5)
 
             torch.save(elected_model.state_dict(), "./model/" + str(self.current_round) + "/g1.pt")
@@ -255,7 +344,7 @@ class Voting:
                 Logger("server_logs" + str(self.current_round)).log("load model g3")
                 pre_model = [load_model(self.SAVE_MODEL_PATH + "g3.pt")]
                 pre_model_name = ["g3"]
-                save_model_name = "aggregation"
+                save_model_name = "g4"
             elif "g2.pt" in model_list:
                 # print("load model g2")
                 Logger("server_logs" + str(self.current_round)).log("load model g2")
@@ -281,7 +370,10 @@ class Voting:
             # 1.선택된 샤드에서 업데이트된 모델을 가져오고 모델의 이름을 생성한다.
             for index in range(UPLOAD_MODEL_NUM):
                 # first shard
-                shard_models.append(load_model(self.SAVE_MODEL_PATH + random_shards[0] + "_" + str(index) + ".pt"))
+                model1 = load_model(self.SAVE_MODEL_PATH + random_shards[0] + "_" + str(index) + ".pt")
+                model_fraction(model1, 1, 5)
+                # shard_models.append(load_model(self.SAVE_MODEL_PATH + random_shards[0] + "_" + str(index) + ".pt"))
+                shard_models.append(model1)
                 shard_models_name.append(random_shards[0] + "_" + str(index))
 
             # model combination을 위해 input_models 리스트에 랜덤으로 선택된 샤드들을 넣는다. -> [[], []] 2차원 리스트
@@ -298,7 +390,7 @@ class Voting:
 
             # 조합된 모델 FedAsyncAvg
             for models in combination_models:
-                model_fraction(models[1], 1, 5)
+                # model_fraction(models[1], 1, 5)
                 model = add_model(models[0], models[1])
                 model_fraction(model, 5, len(self.voting_committee))
 
@@ -313,6 +405,7 @@ class Voting:
 
             # print("Voting Committee: {0}".format(self.voting_committee))
             Logger("server_logs" + str(self.current_round)).log("Voting Committee: {0}".format(self.voting_committee))
+            print(len(self.voting_committee))
             for shard in self.voting_committee:
                 # voting committee에 있는 각 샤드들의 worker 수를 가져온다.
                 worker_length = len(load_worker(shard))
@@ -346,6 +439,10 @@ class Voting:
             torch.save(using_model.state_dict(), "./model/" + str(self.current_round) + "/" + using_model_name[1][:6] + ".pt")
 
             return
+
+
+
+""""""
 
 """
 class ModelCombinator:
@@ -573,4 +670,13 @@ class Voting:
             self.combinator_class.aggregator(elected)
 
             return
+
+current_round = 1
+if current_round == 1:
+    Voting(1, "A+B+C+D+E").handler()
+else:
+    Voting(current_round, "A+B").handler()
+    Voting(current_round, "A+B+C").handler()
+    Voting(current_round, "A+B+C+D").handler()
+    Voting(current_round, "A+B+C+D+E").handler()
 """
