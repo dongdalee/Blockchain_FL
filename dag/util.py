@@ -92,7 +92,7 @@ class plot_accuracy_graph:
 
 
         plt.savefig("./graph/" + str(p.SHARD_ID) + '.png')
-        plt.show()
+        # plt.show()
 
 # plot graph
 def plot_graph():
@@ -129,7 +129,7 @@ def plot_graph():
     plt.figure(1)
     plt.title("Tangle")
     plt.savefig("./graph/" + str(p.SHARD_ID) + '_dag.png')
-    plt.show()
+    # plt.show()
 
 def plot_confusion_matrix(y_true, y_pred, classes, normalize=False, title=None, cmap=plt.cm.Blues):
     if not title:

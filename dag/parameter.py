@@ -61,3 +61,4 @@ GAUSSIAN_SIGMA = 2
 
 # total number of upload models list
 UPLOAD_MODEL_NUM = 3
+MULTI_UPLOAD = False

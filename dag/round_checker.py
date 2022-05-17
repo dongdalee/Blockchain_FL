@@ -17,12 +17,12 @@ def current_round_checker():
 
     if len(check_first) == 0:
         os.mkdir(SAVE_SHARD_MODEL_PATH + "1")
-        print("Global Current Round: 1")
+        print("############## Global Current Round: 1 ##############")
 
         return 1
     else:
         last_round = model_loader()
         os.mkdir(SAVE_SHARD_MODEL_PATH + str(int(max(last_round)) + 1))
-        print("Global Current Round: {0}".format(str(int(max(last_round)) + 1)))
+        print("############## Global Current Round: {0} ##############".format(str(int(max(last_round)) + 1)))
 
         return int(max(last_round)) + 1

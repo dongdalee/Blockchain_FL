@@ -184,7 +184,7 @@ if __name__ == "__main__":
             util.plot_confusion_matrix(actuals, predictions, normalize=True, classes=p.label, title=worker.worker_id)
 
             plt.savefig("./graph/" + str(worker.worker_id) + "_confustion_matrix.png")
-            plt.show()
+            # plt.show()
 
         # 1. send shard model and get another shard model
         # 2. send shard image index to server, this means worker migrate to other shards
@@ -192,10 +192,13 @@ if __name__ == "__main__":
 
         dag.save_shard_global_model(current_round)
 
-        # sender.send_file(p.SERVER_HOST, p.SERVER_PORT, p.SAVE_SHARD_MODEL_PATH + str(current_round) + "/" + p.SHARD_ID + ".pt")
-
-        for i in range(p.UPLOAD_MODEL_NUM):
-            sender.send_file(p.SERVER_HOST, p.SERVER_PORT, p.SAVE_SHARD_MODEL_PATH + str(current_round) + "/" + p.SHARD_ID + "_" + str(i) + ".pt")
+        if p.MULTI_UPLOAD:
+            # 여러개의 shard model을 업로드 할 경우
+            for i in range(p.UPLOAD_MODEL_NUM):
+                sender.send_file(p.SERVER_HOST, p.SERVER_PORT, p.SAVE_SHARD_MODEL_PATH + str(current_round) + "/" + p.SHARD_ID + "_" + str(i) + ".pt")
+        else:
+            # 한개의 shard model을 업로드 할 경우
+            sender.send_file(p.SERVER_HOST, p.SERVER_PORT, p.SAVE_SHARD_MODEL_PATH + str(current_round) + "/" + p.SHARD_ID + ".pt")
 
         receiver.runReceiver()
 

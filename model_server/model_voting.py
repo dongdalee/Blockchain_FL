@@ -199,6 +199,8 @@ class Worker:
 
         return elected
         """
+
+
 class Voting:
     def __init__(self, _current_round):
         self.first_voting = True
@@ -439,12 +441,9 @@ class Voting:
             torch.save(using_model.state_dict(), "./model/" + str(self.current_round) + "/" + using_model_name[1][:6] + ".pt")
 
             return
-
-
-
-""""""
-
 """
+
+
 class ModelCombinator:
     def __init__(self, _round, _mode, _model=None):
         self.round = _round
@@ -662,21 +661,14 @@ class Voting:
                         vote_result = worker_model.test_global_model()
                         self.voting_result[vote_result] += 1
 
-            print(self.voting_result)
+            # print(self.voting_result)
+            Logger("server_logs" + str(self.round)).log("voting result".format(self.voting_result))
 
             max(self.voting_result, key=self.voting_result.get)
             elected = ''.join([k for k, v in self.voting_result.items() if max(self.voting_result.values()) == v][-1])
-            print("elected model", elected)
+            # print("elected model", elected)
+            Logger("server_logs" + str(self.round)).log("elected model".format(elected))
             self.combinator_class.aggregator(elected)
 
             return
-
-current_round = 1
-if current_round == 1:
-    Voting(1, "A+B+C+D+E").handler()
-else:
-    Voting(current_round, "A+B").handler()
-    Voting(current_round, "A+B+C").handler()
-    Voting(current_round, "A+B+C+D").handler()
-    Voting(current_round, "A+B+C+D+E").handler()
 """

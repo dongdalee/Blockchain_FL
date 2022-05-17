@@ -11,11 +11,11 @@ import transaction as tx
 import parameter as p
 from util import Logger, vector_similarity
 
-
 GENESIS_ID = str(uuid4()).replace('-', '')
 
 GENESIS_KEYS = wallet.generate_wallet(inital=True)
 GENESIS_WORKER = Worker('genesis_worker', 0.001, False)
+
 
 class Tangle:
     def __init__(self):
@@ -35,11 +35,9 @@ class Tangle:
         for id_index in np.arange(p.WORKER_NUM):
             self.worker_cumulative_weight_dict["worker" + str(id_index)] = 0
 
-
     def add_transaction(self, transaction: tx.transaction_block):
         self.transactions[transaction.tx_id] = transaction
         self.add_edges(transaction)
-
 
     def add_edges(self, transaction: tx.transaction_block):
         # Creating the forward (in time) edge dict
@@ -58,7 +56,6 @@ class Tangle:
         else:
             self.reverse_edges[approved[1]].append(transaction.tx_id)
 
-
     def random_walk_weighted(self, current_node=GENESIS_ID):
         if len(self.reverse_edges[current_node]) == 0:
             return current_node
@@ -76,7 +73,6 @@ class Tangle:
 
         choice = np.random.choice(np.arange(0, len(self.reverse_edges[current_node])), p=prob)
         return self.random_walk_weighted(self.reverse_edges[current_node][choice])
-
 
     def find_tips(self, algo='weighted_random_walk', local_worker=None):
         if algo == 'recently_added':
@@ -111,7 +107,7 @@ class Tangle:
             widen_search_space = 2
 
             for i, tx_id in enumerate(self.transactions):
-                if i/p.WORKER_NUM < local_worker.round-2:
+                if i / p.WORKER_NUM < local_worker.round - 2:
                     continue
                 else:
                     search_list.append(self.transactions[tx_id])
@@ -119,7 +115,6 @@ class Tangle:
             if len(search_list) < 2:
                 for i, tx_id in enumerate(self.transactions):
                     search_list.append(self.transactions[tx_id])
-
 
             # cumulative weight를 기준으로 내림차순 정렬을 한다.
             search_list.sort(key=lambda x: x.cumulative_weight, reverse=True)
@@ -183,11 +178,11 @@ def get_previous_hashes(tips):
 
 
 def valid_proof(previous_hashes, transaction_dict, nonce):
-    guess = (str(previous_hashes)+ str(transaction_dict) + str(nonce)).encode('utf-8')
+    guess = (str(previous_hashes) + str(transaction_dict) + str(nonce)).encode('utf-8')
     h = hashlib.new('sha256')
     h.update(guess)
     guess_hash = h.hexdigest()
-    return guess_hash[:p.DIFFICULTY] == '0'*p.DIFFICULTY
+    return guess_hash[:p.DIFFICULTY] == '0' * p.DIFFICULTY
 
 
 def proof_of_work(previous_hashes, transaction_dict):
@@ -251,7 +246,7 @@ def save_shard_global_model(current_round):
     model_acc_dict = {}
 
     total_length = len(tangle.transactions)
-    search_space = np.arange(total_length, total_length-((2*p.WORKER_NUM)+(p.WORKER_NUM/2)), -1)
+    search_space = np.arange(total_length, total_length - ((2 * p.WORKER_NUM) + (p.WORKER_NUM / 2)), -1)
 
     for i, tx_id in enumerate(tangle.transactions):
         if i in search_space and tangle.transactions[tx_id].tx_worker_id != "genesis_worker":
@@ -271,31 +266,30 @@ def save_shard_global_model(current_round):
         else:
             continue
 
-    """
     # high cumulative weight model
-    # print("cumulative weight:", model_dict)
-    max_cumulative_weight_model_tx_id = max(model_dict, key=lambda i: model_dict[i])
-    max_cumulative_weight_model = tangle.transactions[max_cumulative_weight_model_tx_id].get_payload()
-    """
+    if p.MULTI_UPLOAD:
+        # 여러개의 model을 뽑기 위해 cumulative weight 내림 차순으로 정렬
+        descending_cumulative_weight = sorted(model_dict.items(), key=lambda x: x[1], reverse=True)
+        upload_model_tx_id = descending_cumulative_weight[:p.UPLOAD_MODEL_NUM]
+        print(upload_model_tx_id)
 
-    # high cumulative weight model
-    descending_cumulative_weight = sorted(model_dict.items(), key=lambda x: x[1], reverse=True)
-    upload_model_tx_id = descending_cumulative_weight[:p.UPLOAD_MODEL_NUM]
-    print(upload_model_tx_id)
+        for index, tx_id_tuple in enumerate(upload_model_tx_id):
+            tx_id = tx_id_tuple[0]
+            top_cumulative_weight_model = tangle.transactions[tx_id].get_payload()
+            torch.save(top_cumulative_weight_model.state_dict(), p.SAVE_SHARD_MODEL_PATH + str(current_round) + "/" + p.SHARD_ID + "_" + str(index) + ".pt")  # shard1_0.pt, shard1_1.pt
+            Logger("transaction").log("Sort by Cumulative Weight: save shard model: {0} | Worker ID: {1} | Accuracy: {2} | Cumulative Weight {3}".format(tx_id, tangle.transactions[tx_id].tx_worker_id, tangle.genesis_worker.evaluation(top_cumulative_weight_model, True), tangle.transactions[tx_id].cumulative_weight))
+    else:
+        # 한개의 model을 뽑기 위해 cumulative weight가 가장 높은 model 하나만 선택
+        max_cumulative_weight_model_tx_id = max(model_dict, key=lambda i: model_dict[i])
+        max_cumulative_weight_model = tangle.transactions[max_cumulative_weight_model_tx_id].get_payload()
+        torch.save(max_cumulative_weight_model.state_dict(), p.SAVE_SHARD_MODEL_PATH + str(current_round) + "/" + p.SHARD_ID + ".pt")
+        Logger("transaction").log("Sort by Cumulative Weight: save shard model: {0} | Worker ID: {1} | Accuracy: {2} | Cumulative Weight {3}".format(max_cumulative_weight_model_tx_id, tangle.transactions[max_cumulative_weight_model_tx_id].tx_worker_id, tangle.genesis_worker.evaluation(max_cumulative_weight_model, True), tangle.transactions[max_cumulative_weight_model_tx_id].cumulative_weight))
+
     # high accuracy model
-    # print("acc weight:", model_acc_dict)
     max_accuracy_model_tx_id = max(model_acc_dict, key=lambda i: model_acc_dict[i])
     max_accuracy_model = tangle.transactions[max_accuracy_model_tx_id].get_payload()
 
-    for index, tx_id_tuple in enumerate(upload_model_tx_id):
-        tx_id = tx_id_tuple[0]
-        top_cumulative_weight_model = tangle.transactions[tx_id].get_payload()
-        torch.save(top_cumulative_weight_model.state_dict(), p.SAVE_SHARD_MODEL_PATH + str(current_round) + "/" + p.SHARD_ID + "_" + str(index) + ".pt") # shard1_0.pt, shard1_1.pt
-        Logger(str("transaction")).log("Sort by Cumulative Weight: save shard model: {0} | Worker ID: {1} | Accuracy: {2} | Cumulative Weight {3}".format(tx_id, tangle.transactions[tx_id].tx_worker_id, tangle.genesis_worker.evaluation(top_cumulative_weight_model, True), tangle.transactions[tx_id].cumulative_weight))
-    # torch.save(max_cumulative_weight_model.state_dict(), p.SAVE_SHARD_MODEL_PATH + str(current_round) + "/" + p.SHARD_ID + ".pt")
-
     print(" ")
-    # Logger(str("transaction")).log("Sort by Cumulative Weight: save shard model: {0} | Worker ID: {1} | Accuracy: {2} | Cumulative Weight {3}".format(max_cumulative_weight_model_tx_id, tangle.transactions[max_cumulative_weight_model_tx_id].tx_worker_id, tangle.genesis_worker.evaluation(max_cumulative_weight_model, True), tangle.transactions[max_cumulative_weight_model_tx_id].cumulative_weight))
     Logger(str("transaction")).log("Sort by Accuracy: save shard model: {0} | Worker ID: {1} | Accuracy: {2}".format(max_accuracy_model_tx_id, tangle.transactions[max_accuracy_model_tx_id].tx_worker_id, tangle.genesis_worker.evaluation(max_accuracy_model, True)))
 
-    # return max_cumulative_weight_model
+    return
