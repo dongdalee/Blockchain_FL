@@ -75,6 +75,55 @@ class Tangle:
         return self.random_walk_weighted(self.reverse_edges[current_node][choice])
 
     def find_tips(self, algo='weighted_random_walk', local_worker=None):
+        # malicious node들이 협력할 때
+        if local_worker.worker_id in p.POISON_WORKER and p.COWORK:
+            print(">~~~~~~~~~ Select Malicious Leader Model {0} ~~~~~~~~~<".format(p.MALICIOUS_LEADER))
+            search_list = []
+            tips_list = []
+
+            for i, tx_id in enumerate(self.transactions):
+                if i / p.WORKER_NUM < local_worker.round - 2:
+                    continue
+                else:
+                    search_list.append(self.transactions[tx_id])
+            if len(search_list) < 2:
+                for tx_id in self.transactions:
+                    search_list.append(self.transactions[tx_id])
+
+            search_list.reverse()
+
+            for target in search_list:
+                if target.tx_worker_id in p.MALICIOUS_LEADER and target.tx_id not in tips_list and len(tips_list) < 3:
+                    tips_list.append(target.tx_id)
+
+            # 찾은 항목중 malicious node가 없을 경우 다른 malicious를 선택한다.
+            if len(tips_list) < 3:
+                for target in search_list:
+                    if target.tx_worker_id in p.POISON_WORKER and target.tx_id not in tips_list and len(tips_list) < 3:
+                        tips_list.append(target.tx_id)
+
+            if len(tips_list) < 3:
+                tips_list = list(random.sample(set(list(self.transactions.keys())[-2:]), 2))
+                local_worker.approve_list[local_worker.round] = tips_list
+
+            # update cumulative weight
+            self.transactions[tips_list[0]].cumulative_weight += 1
+            self.transactions[tips_list[1]].cumulative_weight += 1
+
+            local_worker.approve_list[local_worker.round] = tips_list
+
+            # code to get Worekr's all cumulative weight
+            if self.transactions[tips_list[0]].tx_worker_id in self.worker_cumulative_weight_dict.keys():
+                self.worker_cumulative_weight_dict[self.transactions[tips_list[0]].tx_worker_id] += 1
+            if self.transactions[tips_list[1]].tx_worker_id in self.worker_cumulative_weight_dict.keys():
+                self.worker_cumulative_weight_dict[self.transactions[tips_list[1]].tx_worker_id] += 1
+
+            Logger(str(local_worker.worker_id)).log("TIP1: Tx ID: {0} | Worker ID: {1} ".format(self.transactions[tips_list[0]].tx_id, self.transactions[tips_list[0]].tx_worker_id))
+            Logger(str(local_worker.worker_id)).log("TIP2: Tx ID: {0} | Worker ID: {1} ".format(self.transactions[tips_list[1]].tx_id, self.transactions[tips_list[1]].tx_worker_id))
+            Logger(str(local_worker.worker_id)).log("{0} -> {1} | {0} -> {2}".format(local_worker.worker_id, self.transactions[tips_list[0]].tx_worker_id, self.transactions[tips_list[1]].tx_worker_id))
+
+            return tips_list
+
         if algo == 'recently_added':
             tips_list = list(random.sample(set(list(self.transactions.keys())[-2:]), 2))
             local_worker.approve_list[local_worker.round] = tips_list
@@ -104,7 +153,6 @@ class Tangle:
             tips_list = []
             model_dict = {}
             search_list = []
-            widen_search_space = 2
 
             for i, tx_id in enumerate(self.transactions):
                 if i / p.WORKER_NUM < local_worker.round - 2:
@@ -128,7 +176,7 @@ class Tangle:
                 if p.SIMILARITY == "cosine":
                     similarity = vector_similarity(local_worker.model, model)
                     model_dict[target.tx_id] = accuracy + similarity, own_worker_id
-                    Logger(str(local_worker.worker_id)).log("Worker: {0}, F1 Score: {1:.5f} {2} Similarity: {3:.2f}".format(target.tx_worker_id, accuracy, p.SIMILARITY, similarity))
+                    Logger(str(local_worker.worker_id)).log("Worker: {0}, F1 Score: {1:.5f}, {2} Similarity: {3:.2f}".format(target.tx_worker_id, accuracy, p.SIMILARITY, similarity))
                 else:
                     model_dict[target.tx_id] = accuracy, own_worker_id
                     Logger(str(local_worker.worker_id)).log("Worker: {0}, F1 Score: {1:.5f}".format(target.tx_worker_id, accuracy))
@@ -146,6 +194,7 @@ class Tangle:
                 Logger(str(local_worker.worker_id)).log("TIP2: Tx ID: {0} | Worker ID: {1} | F1 Score: {2:.5f}".format(sorted_by_value[1][0], sorted_by_value[1][1][1], sorted_by_value[1][1][0]))
                 Logger(str(local_worker.worker_id)).log("{0} -> {1} | {0} -> {2}".format(local_worker.worker_id, sorted_by_value[0][1][1], sorted_by_value[1][1][1]))
 
+            # transaction ID 값을 저장한다.
             tips_list.append(sorted_by_value[0][0])
             tips_list.append(sorted_by_value[1][0])
 

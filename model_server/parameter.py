@@ -1,7 +1,7 @@
 # server receiver parameter
 HOST = '127.0.0.1'
 PORT = 9025
-SHARD_NUM = 1
+SHARD_NUM = 5
 
 # server sender parameter
 SHARD_ADDR_LIST = [

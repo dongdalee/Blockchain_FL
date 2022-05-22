@@ -3,6 +3,7 @@ import server_send as sender
 import parameter as p
 from round_checker import current_round_checker
 from model_voting import Voting, load_model, fed_avg
+from global_model_voting import GlobalVoting
 import torch
 
 current_round = current_round_checker()
@@ -31,7 +32,7 @@ else:
     Logger("server_logs" + str(self.round)).log("======== s1+s2+s3+s4+s5 voting ========")
     Voting(curren_round, "A+B+C+D+E").handler()
 """
-
+# ================================================================================================================
 """
 # 각 shard로부터 3개의 모델이 업로드되면 투표를 통해 모델을 선택한 후 가장 좋은 모델을 이용하여 global model을 생성한다.
 print("================== MODEL VOTING ==================")
@@ -51,8 +52,9 @@ print("aggregation model")
 avg = fed_avg(shard1, shard2, shard3, shard4, shard5)
 torch.save(avg.state_dict(), "./model/" + str(current_round) + "/aggregation.pt")
 """
-
-# 동기적으로 FedAvg
+# ================================================================================================================
+"""
+# 동기적으로 투표 없이 FedAvg
 shard1 = load_model("./model/" + str(current_round) + "/shard1.pt")
 shard2 = load_model("./model/" + str(current_round) + "/shard2.pt")
 shard3 = load_model("./model/" + str(current_round) + "/shard3.pt")
@@ -62,6 +64,12 @@ shard5 = load_model("./model/" + str(current_round) + "/shard5.pt")
 print("aggregation model")
 avg = fed_avg(shard1, shard2, shard3, shard4, shard5)
 torch.save(avg.state_dict(), "./model/" + str(current_round) + "/aggregation.pt")
+"""
+# ================================================================================================================
+
+# global model을 생성한 후 global model에 대해서 모든 worker들이 투표를 한다.
+handler = GlobalVoting(current_round)
+handler.global_voting()
 
 for address in p.SHARD_ADDR_LIST:
     for filename in p.FILE_LIST:
