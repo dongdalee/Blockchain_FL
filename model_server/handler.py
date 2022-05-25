@@ -4,6 +4,7 @@ import parameter as p
 from round_checker import current_round_checker
 from model_voting import Voting, load_model, fed_avg
 from global_model_voting import GlobalVoting
+from mitigate_update import Voting
 import torch
 
 current_round = current_round_checker()
@@ -66,6 +67,17 @@ avg = fed_avg(shard1, shard2, shard3, shard4, shard5)
 torch.save(avg.state_dict(), "./model/" + str(current_round) + "/aggregation.pt")
 """
 # ================================================================================================================
+# 랜덤하게 샤드를 선택하여 각 모델에 대해 이전 모델과 현재 업데이트된 모델에 대하여 투표한 후 FedAvg를 한다.
+handler = Voting(current_round)
+handler.model_voter()
+handler.model_voter()
+handler.model_voter()
+handler.model_voter()
+
+avg = fed_avg(handler.modelA, handler.modelB, handler.modelC, handler.modelD, handler.modelE)
+
+torch.save(avg.state_dict(), "./model/" + str(current_round) + "/aggregation.pt")
+
 
 # global model을 생성한 후 global model에 대해서 모든 worker들이 투표를 한다.
 handler = GlobalVoting(current_round)

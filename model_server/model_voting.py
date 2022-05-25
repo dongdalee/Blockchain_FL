@@ -8,129 +8,7 @@ from util import variable_name
 from itertools import product
 from parameter import WORKER_DATA, LEARNING_MEASURE, SHARD_LIST, UPLOAD_MODEL_NUM
 from util import Logger
-
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
-
-def load_model(load_path):
-    model = CNN().to(device)
-    model.load_state_dict(torch.load(load_path), strict=False)
-    return model
-
-
-def load_worker(shard):
-    workers = os.listdir("./data/" + shard + "/")
-    for worker in workers:
-        if "worker" not in worker:
-            workers.remove(worker)
-
-    return workers
-
-
-def model_fraction(model, numerator, denominator):
-    model.layer1[0].weight.data = numerator * model.layer1[0].weight.data / denominator
-    model.layer1[0].bias.data = numerator * model.layer1[0].bias.data / denominator
-
-    model.layer2[0].weight.data = numerator * model.layer2[0].weight.data / denominator
-    model.layer2[0].bias.data = numerator * model.layer2[0].bias.data / denominator
-
-    model.layer3[0].weight.data = numerator * model.layer3[0].weight.data / denominator
-    model.layer3[0].bias.data = numerator * model.layer3[0].bias.data / denominator
-
-    model.fc1.weight.data = numerator * model.fc1.weight.data / denominator
-    model.fc1.bias.data = numerator * model.fc1.bias.data / denominator
-
-    model.fc2.weight.data = numerator * model.fc2.weight.data / denominator
-    model.fc2.bias.data = numerator * model.fc2.bias.data / denominator
-
-
-def add_model(*models):
-    fed_add_model = CNN().to(device)
-
-    fed_add_model.layer1[0].weight.data.fill_(0.0)
-    fed_add_model.layer1[0].bias.data.fill_(0.0)
-
-    fed_add_model.layer2[0].weight.data.fill_(0.0)
-    fed_add_model.layer2[0].bias.data.fill_(0.0)
-
-    fed_add_model.layer3[0].weight.data.fill_(0.0)
-    fed_add_model.layer3[0].bias.data.fill_(0.0)
-
-    fed_add_model.fc1.weight.data.fill_(0.0)
-    fed_add_model.fc1.bias.data.fill_(0.0)
-
-    fed_add_model.fc2.weight.data.fill_(0.0)
-    fed_add_model.fc2.bias.data.fill_(0.0)
-
-    for model in models:
-        fed_add_model.layer1[0].weight.data += model.layer1[0].weight.data
-        fed_add_model.layer1[0].bias.data += model.layer1[0].bias.data
-
-        fed_add_model.layer2[0].weight.data += model.layer2[0].weight.data
-        fed_add_model.layer2[0].bias.data += model.layer2[0].bias.data
-
-        fed_add_model.layer3[0].weight.data += model.layer3[0].weight.data
-        fed_add_model.layer3[0].bias.data += model.layer3[0].bias.data
-
-        fed_add_model.fc1.weight.data += model.fc1.weight.data
-        fed_add_model.fc1.bias.data += model.fc1.bias.data
-
-        fed_add_model.fc2.weight.data += model.fc2.weight.data
-        fed_add_model.fc2.bias.data += model.fc2.bias.data
-
-    return fed_add_model
-
-
-def fed_avg(*models):
-    fed_avg_model = CNN().to(device)
-
-    fed_avg_model.layer1[0].weight.data.fill_(0.0)
-    fed_avg_model.layer1[0].bias.data.fill_(0.0)
-
-    fed_avg_model.layer2[0].weight.data.fill_(0.0)
-    fed_avg_model.layer2[0].bias.data.fill_(0.0)
-
-    fed_avg_model.layer3[0].weight.data.fill_(0.0)
-    fed_avg_model.layer3[0].bias.data.fill_(0.0)
-
-    fed_avg_model.fc1.weight.data.fill_(0.0)
-    fed_avg_model.fc1.bias.data.fill_(0.0)
-
-    fed_avg_model.fc2.weight.data.fill_(0.0)
-    fed_avg_model.fc2.bias.data.fill_(0.0)
-
-    for model in models:
-        fed_avg_model.layer1[0].weight.data += model.layer1[0].weight.data
-        fed_avg_model.layer1[0].bias.data += model.layer1[0].bias.data
-
-        fed_avg_model.layer2[0].weight.data += model.layer2[0].weight.data
-        fed_avg_model.layer2[0].bias.data += model.layer2[0].bias.data
-
-        fed_avg_model.layer3[0].weight.data += model.layer3[0].weight.data
-        fed_avg_model.layer3[0].bias.data += model.layer3[0].bias.data
-
-        fed_avg_model.fc1.weight.data += model.fc1.weight.data
-        fed_avg_model.fc1.bias.data += model.fc1.bias.data
-
-        fed_avg_model.fc2.weight.data += model.fc2.weight.data
-        fed_avg_model.fc2.bias.data += model.fc2.bias.data
-
-    fed_avg_model.layer1[0].weight.data = fed_avg_model.layer1[0].weight.data / len(models)
-    fed_avg_model.layer1[0].bias.data = fed_avg_model.layer1[0].bias.data / len(models)
-
-    fed_avg_model.layer2[0].weight.data = fed_avg_model.layer2[0].weight.data / len(models)
-    fed_avg_model.layer2[0].bias.data = fed_avg_model.layer2[0].bias.data / len(models)
-
-    fed_avg_model.layer3[0].weight.data = fed_avg_model.layer3[0].weight.data / len(models)
-    fed_avg_model.layer3[0].bias.data = fed_avg_model.layer3[0].bias.data / len(models)
-
-    fed_avg_model.fc1.weight.data = fed_avg_model.fc1.weight.data / len(models)
-    fed_avg_model.fc1.bias.data = fed_avg_model.fc1.bias.data / len(models)
-
-    fed_avg_model.fc2.weight.data = fed_avg_model.fc2.weight.data / len(models)
-    fed_avg_model.fc2.bias.data = fed_avg_model.fc2.bias.data / len(models)
-
-    return fed_avg_model
+from MachineLearningUtility import device, load_model, load_worker, model_fraction, add_model, fed_avg
 
 
 class Worker:
@@ -140,6 +18,7 @@ class Worker:
         self.ballot = {}
         self.current_round = _current_round
 
+    """
     def test_global_model(self, model_id_list):
         for index, model in enumerate(self.models):
             model.eval()
@@ -190,17 +69,16 @@ class Worker:
                 accuracy = round(f1_score(actuals, predictions, average='weighted') * 100, 2)
 
             model_name = variable_name(model)
-            # print("Model {0} Accuracy: {1}".format(model_id_list[index], accuracy))
-            Logger("server_logs" + str(self.current_round)).log("Model {0} Accuracy: {1}".format(model_id_list[index], accuracy))
+            Logger("server_logs" + str(self.current_round)).log("Model {0} Accuracy: {1}".format(model_name, accuracy))
             self.ballot[model_name] = accuracy
 
         max(self.ballot, key=self.ballot.get)
         elected = ''.join([k for k, v in self.ballot.items() if max(self.ballot.values()) == v][0])
 
         return elected
-        """
 
 
+"""
 class Voting:
     def __init__(self, _current_round):
         self.first_voting = True
@@ -671,4 +549,4 @@ class Voting:
             self.combinator_class.aggregator(elected)
 
             return
-"""
+
