@@ -82,7 +82,7 @@ class Tangle:
             tips_list = []
 
             for i, tx_id in enumerate(self.transactions):
-                if i / p.WORKER_NUM < local_worker.round - 2:
+                if i / p.WORKER_NUM < local_worker.round - 3:
                     continue
                 else:
                     search_list.append(self.transactions[tx_id])

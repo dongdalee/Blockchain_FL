@@ -63,10 +63,10 @@ class Worker:
                     predictions.extend(prediction)
             actuals, predictions = [i.item() for i in actuals], [i.item() for i in predictions]
 
-            if LEARNING_MEASURE == "accuracy":
-                accuracy = round(accuracy_score(actuals, predictions) * 100, 2)
-            elif LEARNING_MEASURE == "f1 score":
+            if LEARNING_MEASURE == "f1 score":
                 accuracy = round(f1_score(actuals, predictions, average='weighted') * 100, 2)
+            else:
+                accuracy = round(accuracy_score(actuals, predictions) * 100, 2)
 
             model_name = variable_name(model)
             Logger("server_logs" + str(self.current_round)).log("Model {0} Accuracy: {1}".format(model_name, accuracy))
@@ -487,12 +487,14 @@ class Voting:
                 model1, model2, model3, model4 = self.combinator_class.combinator()
 
                 for i in range(2):
+                    Logger("server_logs" + str(self.round)).log("<<<<<<<<<<<<<<< Shard{0} Voting ... >>>>>>>>>>>>>>>".format(i + 1))
                     shard = os.listdir(WORKER_DATA + "shard" + str(i+1) + "/")
                     if ".DS_Store" in shard:
                         shard.remove(".DS_Store")
 
                     for worker in shard:
-                        worker_model = Worker(model1, model2, model3, model4, _shard=i+1, _worker=int(worker[-1]))
+                        Logger("server_logs" + str(self.round)).log("------------- {0} Voting -------------".format(worker))
+                        worker_model = Worker(model1, model2, model3, model4, _shard="shard"+str(i + 1), _worker=int(worker[-1]), _current_round=self.round)
                         vote_result = worker_model.test_global_model()
                         self.voting_result[vote_result] += 1
 
@@ -501,12 +503,14 @@ class Voting:
                 model1, model2 = self.combinator_class.combinator()
 
                 for i in range(3):
+                    Logger("server_logs" + str(self.round)).log("<<<<<<<<<<<<<<< Shard{0} Voting ... >>>>>>>>>>>>>>>".format(i + 1))
                     shard = os.listdir(WORKER_DATA + "shard" + str(i + 1) + "/")
                     if ".DS_Store" in shard:
                         shard.remove(".DS_Store")
 
                     for worker in shard:
-                        worker_model = Worker(model1, model2, _shard=i + 1, _worker=int(worker[-1]))
+                        Logger("server_logs" + str(self.round)).log("------------- {0} Voting -------------".format(worker))
+                        worker_model = Worker(model1, model2, _shard="shard"+str(i + 1), _worker=int(worker[-1]), _current_round=self.round)
                         vote_result = worker_model.test_global_model()
                         self.voting_result[vote_result] += 1
 
@@ -514,13 +518,15 @@ class Voting:
                 self.combinator_class = ModelCombinator(self.round, self.global_model_type)
                 model1, model2 = self.combinator_class.combinator()
 
-                for i in range(3):
+                for i in range(4):
+                    Logger("server_logs" + str(self.round)).log("<<<<<<<<<<<<<<< Shard{0} Voting ... >>>>>>>>>>>>>>>".format(i + 1))
                     shard = os.listdir(WORKER_DATA + "shard" + str(i + 1) + "/")
                     if ".DS_Store" in shard:
                         shard.remove(".DS_Store")
 
                     for worker in shard:
-                        worker_model = Worker(model1, model2, _shard=i + 1, _worker=int(worker[-1]))
+                        Logger("server_logs" + str(self.round)).log("------------- {0} Voting -------------".format(worker))
+                        worker_model = Worker(model1, model2, _shard="shard"+str(i + 1), _worker=int(worker[-1]), _current_round=self.round)
                         vote_result = worker_model.test_global_model()
                         self.voting_result[vote_result] += 1
 
@@ -528,22 +534,23 @@ class Voting:
                 self.combinator_class = ModelCombinator(self.round, self.global_model_type)
                 model1, model2 = self.combinator_class.combinator()
 
-                for i in range(3):
+                for i in range(5):
+                    Logger("server_logs" + str(self.round)).log("<<<<<<<<<<<<<<< Shard{0} Voting ... >>>>>>>>>>>>>>>".format(i + 1))
                     shard = os.listdir(WORKER_DATA + "shard" + str(i + 1) + "/")
                     if ".DS_Store" in shard:
                         shard.remove(".DS_Store")
 
                     for worker in shard:
-                        worker_model = Worker(model1, model2, _shard=i + 1, _worker=int(worker[-1]))
+                        Logger("server_logs" + str(self.round)).log("------------- {0} Voting -------------".format(worker))
+                        worker_model = Worker(model1, model2, _shard="shard"+str(i + 1), _worker=int(worker[-1]), _current_round=self.round)
                         vote_result = worker_model.test_global_model()
                         self.voting_result[vote_result] += 1
 
-            Logger("server_logs" + str(self.round)).log("voting result".format(self.voting_result))
+            Logger("server_logs" + str(self.round)).log("voting result: {0}".format(self.voting_result))
 
             max(self.voting_result, key=self.voting_result.get)
             elected = ''.join([k for k, v in self.voting_result.items() if max(self.voting_result.values()) == v][-1])
-            Logger("server_logs" + str(self.round)).log("elected model".format(elected))
+            Logger("server_logs" + str(self.round)).log("elected model: {0}".format(elected))
             self.combinator_class.aggregator(elected)
 
             return
-

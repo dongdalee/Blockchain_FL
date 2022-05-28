@@ -2,15 +2,17 @@ import server_receiver as receiver
 import server_send as sender
 import parameter as p
 from round_checker import current_round_checker
-from model_voting import Voting, load_model, mitigate_fed_avg
+from model_voting import Voting
 # from global_model_voting import GlobalVoting
 # from mitigate_update import Voting
 import torch
 from util import Logger
+from MachineLearningUtility import load_model, mitigate_fed_avg
 
-current_round = current_round_checker()
-receiver.runServer()
+# current_round = current_round_checker()
+# receiver.runServer()
 
+current_round = 2
 
 # global blockchain의 이전 모델과 업데이트된 모델을 비교투표 하여 global model 생성
 if current_round == 1:
@@ -34,12 +36,12 @@ else:
     Logger("server_logs" + str(current_round)).log("======== s1+s2+s3+s4+s5 voting ========")
     Voting(current_round, "A+B+C+D+E").handler()
 
-    # mitigate model update
-    previous_model = load_model("./model/" + str(current_round - 1) + "/aggregation.pt")
-    current_model = load_model("./model/" + str(current_round) + "/aggregation.pt")
-
-    mitigate_model = mitigate_fed_avg(previous_model, current_model, alpha=0.5)
-    torch.save(mitigate_model.state_dict(), "./model/" + str(current_round) + "/aggregation.pt")
+    # # mitigate model update
+    # previous_model = load_model("./model/" + str(current_round - 1) + "/aggregation.pt")
+    # current_model = load_model("./model/" + str(current_round) + "/aggregation.pt")
+    #
+    # mitigate_model = mitigate_fed_avg(previous_model, current_model, alpha=0.5)
+    # torch.save(mitigate_model.state_dict(), "./model/" + str(current_round) + "/aggregation.pt")
 
 # ================================================================================================================
 """
@@ -94,11 +96,11 @@ avg = fed_avg(handler.modelA, handler.modelB, handler.modelC, handler.modelD, ha
 torch.save(avg.state_dict(), "./model/" + str(current_round) + "/aggregation.pt")
 """
 
-for address in p.SHARD_ADDR_LIST:
-    for filename in p.FILE_LIST:
-        shard = sender.sendServer(address["ip"], address["port"])
-        if filename == ".DS_Store":
-            pass
-        shard.send_file("model/" + str(current_round) + "/" + filename)
-        shard.clientSock.close()
-        print("socket closed")
+# for address in p.SHARD_ADDR_LIST:
+#     for filename in p.FILE_LIST:
+#         shard = sender.sendServer(address["ip"], address["port"])
+#         if filename == ".DS_Store":
+#             pass
+#         shard.send_file("model/" + str(current_round) + "/" + filename)
+#         shard.clientSock.close()
+#         print("socket closed")
