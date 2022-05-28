@@ -8,7 +8,7 @@ from util import variable_name
 from itertools import product
 from parameter import WORKER_DATA, LEARNING_MEASURE, SHARD_LIST, UPLOAD_MODEL_NUM
 from util import Logger
-from MachineLearningUtility import device, load_model, load_worker, model_fraction, add_model, fed_avg
+from MachineLearningUtility import device, load_model, load_worker, model_fraction, add_model
 
 
 class Worker:
@@ -493,7 +493,6 @@ class Voting:
 
                     for worker in shard:
                         worker_model = Worker(model1, model2, model3, model4, _shard=i+1, _worker=int(worker[-1]))
-                        # print("worker"+worker[-1])
                         vote_result = worker_model.test_global_model()
                         self.voting_result[vote_result] += 1
 
@@ -539,12 +538,10 @@ class Voting:
                         vote_result = worker_model.test_global_model()
                         self.voting_result[vote_result] += 1
 
-            # print(self.voting_result)
             Logger("server_logs" + str(self.round)).log("voting result".format(self.voting_result))
 
             max(self.voting_result, key=self.voting_result.get)
             elected = ''.join([k for k, v in self.voting_result.items() if max(self.voting_result.values()) == v][-1])
-            # print("elected model", elected)
             Logger("server_logs" + str(self.round)).log("elected model".format(elected))
             self.combinator_class.aggregator(elected)
 

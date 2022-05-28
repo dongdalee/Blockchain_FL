@@ -2,7 +2,7 @@ import server_receiver as receiver
 import server_send as sender
 import parameter as p
 from round_checker import current_round_checker
-from model_voting import Voting, load_model, fed_avg
+from model_voting import Voting, load_model, mitigate_fed_avg
 # from global_model_voting import GlobalVoting
 # from mitigate_update import Voting
 import torch
@@ -33,6 +33,13 @@ else:
     # print("======== s1+s2+s3+s4+s5 voting ========")
     Logger("server_logs" + str(current_round)).log("======== s1+s2+s3+s4+s5 voting ========")
     Voting(current_round, "A+B+C+D+E").handler()
+
+    # mitigate model update
+    previous_model = load_model("./model/" + str(current_round - 1) + "/aggregation.pt")
+    current_model = load_model("./model/" + str(current_round) + "/aggregation.pt")
+
+    mitigate_model = mitigate_fed_avg(previous_model, current_model, alpha=0.5)
+    torch.save(mitigate_model.state_dict(), "./model/" + str(current_round) + "/aggregation.pt")
 
 # ================================================================================================================
 """
