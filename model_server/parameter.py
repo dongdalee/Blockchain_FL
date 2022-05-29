@@ -19,3 +19,5 @@ LEARNING_MEASURE = "f1 score"
 UPLOAD_MODEL_NUM = 1  # number of upload modle form shard
 SHARD_LIST = ['shard1', 'shard2', 'shard3', 'shard4', 'shard5']  # using for select shard ramdomly
 
+GLOBAL_MODEL_ALPHA = 0.5
+

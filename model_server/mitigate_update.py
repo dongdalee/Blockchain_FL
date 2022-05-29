@@ -50,33 +50,21 @@ class Worker:
 class Voting:
     def __init__(self, _current_round):
         self.first_voting = True
-        self.voting_committee = []
+        self.voting_order = 2
 
         self.current_round = _current_round
         self.SAVE_MODEL_PATH = "./model/" + str(self.current_round) + "/"
 
-        self.modelA = None
-        self.modelB = None
-        self.modelC = None
-        self.modelD = None
-        self.modelE = None
-
-        self.g1 = None
-        self.g2 = None
-        self.g3 = None
-        self.g4 = None
 
     def model_voter(self):
-        if self.g1 is not None:
-            self.first_voting = False
-
-        if self.first_voting:
+        if self.voting_order == 2:
             Logger("server_logs" + str(self.current_round)).log("first voting")
             shard_A_models = []
             shard_B_models = []
 
             input_models = []
-            input_model_names = []
+
+            voting_committee = []
 
             voting_result = {"preA_preB" : 0, "preA_currB" : 0, "currA_preB" : 0, "currA_currB" : 0}
 
@@ -84,7 +72,7 @@ class Voting:
             random_shards = random.sample(SHARD_LIST, 2)
             SHARD_LIST.remove(random_shards[0])
             SHARD_LIST.remove(random_shards[1])
-            self.voting_committee.extend([random_shards[0], random_shards[1]])
+            voting_committee.extend([random_shards[0], random_shards[1]])
 
             # 랜덤하게 선택된 shard의 이전 round의 model과 현재 round의 model을 가져온다.
             # 랜덤하게 가져온 모델을 1/5로 나눈다. 5 = number of shard
@@ -123,13 +111,11 @@ class Voting:
             currA_currB = add_model(combination_models[3][0], combination_models[3][1])
             model_fraction(currA_currB, 5, 2)
 
-
             # 해당 샤드의 worker 수를 가져오기 위해 사용
             shard1_worker_length = len(load_worker(random_shards[0]))
             shard2_worker_length = len(load_worker(random_shards[1]))
 
-            Logger("server_logs" + str(self.current_round)).log("Voting Committee: {0}".format(self.voting_committee))
-            print(len(self.voting_committee))
+            Logger("server_logs" + str(self.current_round)).log("Voting Committee: {0}".format(voting_committee))
 
             Logger("server_logs" + str(self.current_round)).log("=============== Voting Shard: {0} ===============".format(random_shards[0]))
             for worker_id in range(shard1_worker_length):
@@ -155,57 +141,58 @@ class Voting:
 
             if elected == "preA_preB":
                 Logger("server_logs" + str(self.current_round)).log("preA_preB")
-                self.modelA = load_model("./model/" + str(self.current_round - 1) + "/" + random_shards[0] + ".pt")
-                self.modelB = load_model("./model/" + str(self.current_round - 1) + "/" + random_shards[1] + ".pt")
                 model_fraction(preA_preB, 2, 5)
-                self.g1 = preA_preB
+                torch.save(preA_preB.state_dict(), "./model/" + str(self.current_round) + "/g1.pt")
             elif elected == "preA_currB":
                 Logger("server_logs" + str(self.current_round)).log("preA_currB")
-                self.modelA = load_model("./model/" + str(self.current_round - 1) + "/" + random_shards[0] + ".pt")
-                self.modelB = load_model("./model/" + str(self.current_round) + "/" + random_shards[1] + ".pt")
                 model_fraction(preA_currB, 2, 5)
-                self.g1 = preA_currB
+                torch.save(preA_currB.state_dict(), "./model/" + str(self.current_round) + "/g1.pt")
             elif elected == "currA_preB":
                 Logger("server_logs" + str(self.current_round)).log("currA_preB")
-                self.modelA = load_model("./model/" + str(self.current_round) + "/" + random_shards[0] + ".pt")
-                self.modelB = load_model("./model/" + str(self.current_round - 1) + "/" + random_shards[1] + ".pt")
                 model_fraction(currA_preB, 2, 5)
-                self.g1 = currA_preB
+                torch.save(currA_preB.state_dict(), "./model/" + str(self.current_round) + "/g1.pt")
             elif elected == "currA_currB":
                 Logger("server_logs" + str(self.current_round)).log("currA_currB")
-                self.modelA = load_model("./model/" + str(self.current_round) + "/" + random_shards[0] + ".pt")
-                self.modelB = load_model("./model/" + str(self.current_round) + "/" + random_shards[1] + ".pt")
                 model_fraction(currA_currB, 2, 5)
-                self.g1 = currA_currB
+                torch.save(currA_currB.state_dict(), "./model/" + str(self.current_round) + "/g1.pt")
+
+            self.voting_order += 1
 
             return
+
         else:
             input_models = []
             voting_result = {"global_pre" : 0, "global_curr" : 0}
+            # votted_model_list = os.listdir("model/" + str(self.current_round) + "/")
 
             Logger("server_logs" + str(self.current_round)).log("model voting")
+            print("Voting Order: {0}".format(self.voting_order))
 
             # 이전 투표를 통해 얻은 글로벌 모델을 가져온다.
-            if self.g3 is not None:
+            if self.voting_order == 5:
                 Logger("server_logs" + str(self.current_round)).log("load model g3")
-                pre_global_model = self.g3
-            elif self.g2 is not None:
+                pre_global_model = load_model("model/" + str(self.current_round) + "/g3.pt")
+                save_model_name = "aggregation.pt"
+            elif self.voting_order == 4:
                 Logger("server_logs" + str(self.current_round)).log("load model g2")
-                pre_global_model = self.g2
+                pre_global_model = load_model("model/" + str(self.current_round) + "/g2.pt")
+                save_model_name = "g3.pt"
             else:
                 Logger("server_logs" + str(self.current_round)).log("load model g1")
-                pre_global_model = self.g1
+                pre_global_model = load_model("model/" + str(self.current_round) + "/g1.pt")
+                save_model_name = "g2.pt"
 
             # 이전에 투표에서 참여한 모델을 제외하고 랜덤하게 샤드를 선택한다.
             random_shards = random.sample(SHARD_LIST, 1)
             SHARD_LIST.remove(random_shards[0])
-            self.voting_committee.append(random_shards[0])
+            voting_committee = random_shards[0]
 
             # 이전 모델과 새롭게 선택된 샤드의 모델을 combination하기 위해 리스트에 이전 모델과 모델 이름을 추가한다.
             input_models.append([pre_global_model])
 
             pre_model = load_model("./model/" + str(self.current_round - 1) + "/" + random_shards[0] + ".pt")
             model_fraction(pre_model, 1, 5)
+
             curr_model = load_model("./model/" + str(self.current_round) + "/" + random_shards[0] + ".pt")
             model_fraction(curr_model, 1, 5)
 
@@ -214,30 +201,28 @@ class Voting:
 
             # 샤드 모델 combination
             combination_models = list(product(*input_models))
-            combination_model_names = list(product(*[["g" + str(len(self.voting_committee) - 2)], ["pre_" + random_shards[0], "curr_" + random_shards[0]]]))
+            combination_model_names = list(product(*[["g" + str(self.voting_order - 2)], ["pre_" + random_shards[0], "curr_" + random_shards[0]]]))
 
             global_pre = add_model(combination_models[0][0], combination_models[0][1])
-            model_fraction(global_pre, 5, len(self.voting_committee))
+            model_fraction(global_pre, 5, self.voting_order)
 
             global_curr = add_model(combination_models[1][0], combination_models[1][1])
-            model_fraction(global_curr, 5, len(self.voting_committee))
+            model_fraction(global_curr, 5, self.voting_order)
 
             Logger("server_logs" + str(self.current_round)).log("Combination model list: {0} length {1}".format(combination_model_names, len(combination_models)))
 
-            Logger("server_logs" + str(self.current_round)).log("Voting Committee: {0}".format(self.voting_committee))
-            print(len(self.voting_committee))
+            Logger("server_logs" + str(self.current_round)).log("Voting Committee: {0}".format(voting_committee))
 
-            for shard in self.voting_committee:
-                # voting committee에 있는 각 샤드들의 worker 수를 가져온다.
-                worker_length = len(load_worker(shard))
+            # voting committee에 있는 각 샤드들의 worker 수를 가져온다.
+            worker_length = len(load_worker(voting_committee))
 
-                Logger("server_logs" + str(self.current_round)).log("=============== Voting Shard: {0} ===============".format(shard))
-                for worker_id in range(worker_length):
-                    Logger("server_logs" + str(self.current_round)).log("#----- Worker{0} -----#".format(worker_id))
-                    worker = Worker(global_pre, global_curr, _shard=random_shards[0], _worker=worker_id, _current_round=self.current_round)
-                    elect_result = worker.test_global_model()
-                    voting_result[elect_result] += 1
-                    Logger("server_logs" + str(self.current_round)).log("<----- elected: {0} ----->\n".format(elect_result))
+            Logger("server_logs" + str(self.current_round)).log("=============== Voting Shard: {0} ===============".format(voting_committee))
+            for worker_id in range(worker_length):
+                Logger("server_logs" + str(self.current_round)).log("#----- Worker{0} -----#".format(worker_id))
+                worker = Worker(global_pre, global_curr, _shard=random_shards[0], _worker=worker_id, _current_round=self.current_round)
+                elect_result = worker.test_global_model()
+                voting_result[elect_result] += 1
+                Logger("server_logs" + str(self.current_round)).log("<----- elected: {0} ----->\n".format(elect_result))
 
             Logger("server_logs" + str(self.current_round)).log("Voting Result: {0}".format(voting_result))
             max(voting_result, key=voting_result.get)
@@ -245,48 +230,16 @@ class Voting:
             Logger("server_logs" + str(self.current_round)).log(elected)
 
 
-            if self.g3 is not None:
-                if elected == "global_pre":
-                    model_fraction(global_pre, len(self.voting_committee), 5)
-                    self.g4 = global_pre
-                    self.modelE = load_model("./model/" + str(self.current_round - 1) + "/" + random_shards[0] + ".pt")
-                elif elected == "global_curr":
-                    model_fraction(global_curr, len(self.voting_committee), 5)
-                    self.g4 = global_curr
-                    self.modelE = load_model("./model/" + str(self.current_round) + "/" + random_shards[0] + ".pt")
+            if elected == "global_pre":
+                model_fraction(global_pre, self.voting_order, 5)
+                torch.save(global_pre.state_dict(), "./model/" + str(self.current_round) + "/" + save_model_name)
+            elif elected == "global_curr":
+                model_fraction(global_curr, self.voting_order, 5)
+                torch.save(global_curr.state_dict(), "./model/" + str(self.current_round) + "/" + save_model_name)
 
-            elif self.g2 is not None:
-                if elected == "global_pre":
-                    model_fraction(global_pre, len(self.voting_committee), 5)
-                    self.g3 = global_pre
-                    self.modelD = load_model("./model/" + str(self.current_round - 1) + "/" + random_shards[0] + ".pt")
-                elif elected == "global_curr":
-                    model_fraction(global_curr, len(self.voting_committee), 5)
-                    self.g3 = global_curr
-                    self.modelD = load_model("./model/" + str(self.current_round) + "/" + random_shards[0] + ".pt")
-
-            else:
-                if elected == "global_pre":
-                    model_fraction(global_pre, len(self.voting_committee), 5)
-                    self.g2 = global_pre
-                    self.modelC = load_model("./model/" + str(self.current_round - 1) + "/" + random_shards[0] + ".pt")
-                elif elected == "global_curr":
-                    model_fraction(global_curr, len(self.voting_committee), 5)
-                    self.g2 = global_curr
-                    self.modelC = load_model("./model/" + str(self.current_round) + "/" + random_shards[0] + ".pt")
+            self.voting_order += 1
 
             return
 
-"""
-handler = Voting(2)
-handler.model_voter()
-handler.model_voter()
-handler.model_voter()
-handler.model_voter()
-
-avg = fed_avg(handler.modelA, handler.modelB, handler.modelC, handler.modelD, handler.modelE)
-
-torch.save(avg.state_dict(), "./model/" + str(1) + "/aggregation.pt")
-"""
 
 

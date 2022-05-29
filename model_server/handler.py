@@ -2,18 +2,18 @@ import server_receiver as receiver
 import server_send as sender
 import parameter as p
 from round_checker import current_round_checker
-from model_voting import Voting
 # from global_model_voting import GlobalVoting
-# from mitigate_update import Voting
+from mitigate_update import Voting
 import torch
 from util import Logger
-from MachineLearningUtility import load_model, mitigate_fed_avg
+from MachineLearningUtility import load_model, mitigate_fed_avg, test_label_predictions, fed_avg
+from sklearn.metrics import accuracy_score
+from parameter import GLOBAL_MODEL_ALPHA
 
-# current_round = current_round_checker()
-# receiver.runServer()
+current_round = current_round_checker()
+receiver.runServer()
 
-current_round = 2
-
+"""
 # global blockchain의 이전 모델과 업데이트된 모델을 비교투표 하여 global model 생성
 if current_round == 1:
     # print("=========== Round 1 Model Aggregation ===========")
@@ -42,7 +42,7 @@ else:
     #
     # mitigate_model = mitigate_fed_avg(previous_model, current_model, alpha=0.5)
     # torch.save(mitigate_model.state_dict(), "./model/" + str(current_round) + "/aggregation.pt")
-
+"""
 # ================================================================================================================
 """
 # 각 shard로부터 3개의 모델이 업로드되면 투표를 통해 모델을 선택한 후 가장 좋은 모델을 이용하여 global model을 생성한다.
@@ -83,7 +83,6 @@ handler = GlobalVoting(current_round)
 handler.global_voting()
 """
 # ================================================================================================================
-"""
 # 랜덤하게 샤드를 선택하여 각 모델에 대해 이전 모델과 현재 업데이트된 모델에 대하여 투표한 후 FedAvg를 한다.
 handler = Voting(current_round)
 handler.model_voter()
@@ -91,16 +90,21 @@ handler.model_voter()
 handler.model_voter()
 handler.model_voter()
 
-avg = fed_avg(handler.modelA, handler.modelB, handler.modelC, handler.modelD, handler.modelE)
+"""
+# mitigate model update
+previous_model = load_model("./model/" + str(current_round - 1) + "/aggregation.pt")
+current_model = load_model("./model/" + str(current_round) + "/aggregation.pt")
 
-torch.save(avg.state_dict(), "./model/" + str(current_round) + "/aggregation.pt")
+mitigate_model = mitigate_fed_avg(previous_model, current_model, alpha=GLOBAL_MODEL_ALPHA)
+torch.save(mitigate_model.state_dict(), "./model/" + str(current_round) + "/aggregation.pt")
 """
 
-# for address in p.SHARD_ADDR_LIST:
-#     for filename in p.FILE_LIST:
-#         shard = sender.sendServer(address["ip"], address["port"])
-#         if filename == ".DS_Store":
-#             pass
-#         shard.send_file("model/" + str(current_round) + "/" + filename)
-#         shard.clientSock.close()
-#         print("socket closed")
+for address in p.SHARD_ADDR_LIST:
+    for filename in p.FILE_LIST:
+        shard = sender.sendServer(address["ip"], address["port"])
+        if filename == ".DS_Store":
+            pass
+        shard.send_file("model/" + str(current_round) + "/" + filename)
+        shard.clientSock.close()
+        print("socket closed")
+

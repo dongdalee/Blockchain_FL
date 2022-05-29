@@ -358,7 +358,7 @@ class ModelCombinator:
 
             return self.previous_A_previous_B, self.previous_A_current_B, self.current_A_previous_B, self.current_A_current_B
 
-        elif self.mode == "A+B+C": # G1 + C
+        elif self.mode == "A+B+C":  # G1 + C
             previous_global_model = load_model("./model/" + str(self.round) + "/g1.pt")
             previous_round_model_C = load_model("./model/" + str(self.round - 1) + "/shard3.pt")
             current_round_model_C = load_model("./model/" + str(self.round) + "/shard3.pt")
@@ -373,7 +373,7 @@ class ModelCombinator:
 
             return self.global_model_previous_model, self.global_model_current_model
 
-        elif self.mode == "A+B+C+D": # G2 + D
+        elif self.mode == "A+B+C+D":  # G2 + D
             previous_global_model = load_model("./model/" + str(self.round) + "/g2.pt")
             previous_round_model_D = load_model("./model/" + str(self.round - 1) + "/shard4.pt")
             current_round_model_D = load_model("./model/" + str(self.round) + "/shard4.pt")
@@ -388,7 +388,7 @@ class ModelCombinator:
 
             return self.global_model_previous_model, self.global_model_current_model
 
-        elif self.mode == "A+B+C+D+E": # G2 + D
+        elif self.mode == "A+B+C+D+E":  # G2 + D
             previous_global_model = load_model("./model/" + str(self.round) + "/g3.pt")
             previous_round_model_E = load_model("./model/" + str(self.round - 1) + "/shard5.pt")
             current_round_model_E = load_model("./model/" + str(self.round) + "/shard5.pt")
@@ -421,7 +421,7 @@ class ModelCombinator:
 
             return
 
-        elif self.mode == "A+B+C": # G1 + C
+        elif self.mode == "A+B+C":  # G1 + C
             if elected_model == "model1":
                 model_fraction(self.global_model_previous_model, 3, 5)
                 torch.save(self.global_model_previous_model.state_dict(), "./model/" + str(self.round) + "/g2.pt")
@@ -431,7 +431,7 @@ class ModelCombinator:
 
             return
 
-        elif self.mode == "A+B+C+D": # G2 + D
+        elif self.mode == "A+B+C+D":  # G2 + D
             if elected_model == "model1":
                 model_fraction(self.global_model_previous_model, 4, 5)
                 torch.save(self.global_model_previous_model.state_dict(), "./model/" + str(self.round) + "/g3.pt")
@@ -441,7 +441,7 @@ class ModelCombinator:
 
             return
 
-        elif self.mode == "A+B+C+D+E": # G3 + E
+        elif self.mode == "A+B+C+D+E":  # G3 + E
             if elected_model == "model1":
                 model_fraction(self.global_model_previous_model, 5, 5)
                 torch.save(self.global_model_previous_model.state_dict(), "./model/" + str(self.round) + "/aggregation.pt")
