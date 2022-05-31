@@ -2,7 +2,6 @@ import server_receiver as receiver
 import server_send as sender
 import parameter as p
 from round_checker import current_round_checker
-# from global_model_voting import GlobalVoting
 from mitigate_update import Voting
 import torch
 from util import Logger
@@ -90,14 +89,12 @@ handler.model_voter()
 handler.model_voter()
 handler.model_voter()
 
-"""
 # mitigate model update
 previous_model = load_model("./model/" + str(current_round - 1) + "/aggregation.pt")
 current_model = load_model("./model/" + str(current_round) + "/aggregation.pt")
 
 mitigate_model = mitigate_fed_avg(previous_model, current_model, alpha=GLOBAL_MODEL_ALPHA)
 torch.save(mitigate_model.state_dict(), "./model/" + str(current_round) + "/aggregation.pt")
-"""
 
 for address in p.SHARD_ADDR_LIST:
     for filename in p.FILE_LIST:
@@ -108,3 +105,7 @@ for address in p.SHARD_ADDR_LIST:
         shard.clientSock.close()
         print("socket closed")
 
+# model = load_model("model/2/aggregation.pt")
+# actuals, predictions = test_label_predictions(model)
+# accuracy = accuracy_score(actuals, predictions) * 100
+# print(accuracy)

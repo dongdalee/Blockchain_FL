@@ -74,6 +74,33 @@ class Tangle:
         choice = np.random.choice(np.arange(0, len(self.reverse_edges[current_node])), p=prob)
         return self.random_walk_weighted(self.reverse_edges[current_node][choice])
 
+    def DFSUtil(self, v, visited, multiset):
+        # Mark the current node as visited
+        visited.add(v)
+        # print("{0} {1}".format(self.transactions[v].tx_worker_id, v))
+        multiset.append(self.transactions[v].tx_worker_id)
+
+        # Recur for all the vertices
+        # adjacent to this vertex
+        for neighbour in self.edges[v]:
+            if neighbour not in visited:
+                self.DFSUtil(neighbour, visited, multiset)
+
+    # The function to do DFS traversal. It uses
+    # recursive DFSUtil()
+    def DFS(self, v):
+        multiset = []
+
+        # Create a set to store visited vertices
+        visited = set()
+
+        # Call the recursive helper function
+        # to print DFS traversal
+        self.DFSUtil(v, visited, multiset)
+
+        return multiset
+
+
     def find_tips(self, algo='weighted_random_walk', local_worker=None):
         # malicious node들이 협력할 때
         if local_worker.worker_id in p.POISON_WORKER and p.COWORK:
@@ -124,12 +151,7 @@ class Tangle:
 
             return tips_list
 
-        if algo == 'recently_added':
-            tips_list = list(random.sample(set(list(self.transactions.keys())[-2:]), 2))
-            local_worker.approve_list[local_worker.round] = tips_list
-            return tips_list
-
-        elif algo == 'weighted_random_walk':
+        if algo == 'weighted_random_walk':
             tips_list = []
             for n in range(2):
                 tips_dict = {}
@@ -168,15 +190,28 @@ class Tangle:
             search_list.sort(key=lambda x: x.cumulative_weight, reverse=True)
 
             Logger(str(local_worker.worker_id)).log("|-------------------- Search List TX --------------------|")
-            # for target in search_list[:p.SEARCH_SPACE_RANGE]:
             for target in search_list:
                 model = target.get_payload()
                 own_worker_id = target.tx_worker_id
                 accuracy = local_worker.evaluation(model, False)
                 if p.SIMILARITY == "cosine":
                     similarity = vector_similarity(local_worker.model, model)
-                    model_dict[target.tx_id] = accuracy + similarity, own_worker_id
-                    Logger(str(local_worker.worker_id)).log("Worker: {0}, F1 Score: {1:.5f}, {2} Similarity: {3:.2f}".format(target.tx_worker_id, accuracy, p.SIMILARITY, similarity))
+                    # ========================================================================================
+                    multiset_list = self.DFS(target.tx_id)
+                    # print(multiset_list)
+                    multiset_dict = count_list_overlap(multiset_list)
+                    # print(multiset_dict)
+                    multiset = multiset_dict.values()
+
+                    try:
+                        multiset_value = max(multiset)
+                        total = sum(multiset)
+                        multiplicity = multiset_value / total
+                    except ZeroDivisionError:
+                        multiplicity = 0
+                    # ========================================================================================
+                    model_dict[target.tx_id] = (accuracy / 100) + (similarity / 5) - multiplicity, own_worker_id
+                    Logger(str(local_worker.worker_id)).log("Worker: {0}, F1 Score: {1:.5f}, {2} Similarity: {3:.2f} Multiplicity {4}".format(target.tx_worker_id, accuracy/100, p.SIMILARITY, similarity/5, multiplicity))
                 else:
                     model_dict[target.tx_id] = accuracy, own_worker_id
                     Logger(str(local_worker.worker_id)).log("Worker: {0}, F1 Score: {1:.5f}".format(target.tx_worker_id, accuracy))
@@ -190,8 +225,8 @@ class Tangle:
                 Logger(str(local_worker.worker_id)).log("TIP2: Tx ID: {0} | Worker ID: {1} | Accuracy: {2:.5f}".format(sorted_by_value[1][0], sorted_by_value[1][1][1], sorted_by_value[1][1][0]))
                 Logger(str(local_worker.worker_id)).log("{0} -> {1} | {0} -> {2}".format(local_worker.worker_id, sorted_by_value[0][1][1], sorted_by_value[1][1][1]))
             elif p.LEARNING_MEASURE == "f1 score":
-                Logger(str(local_worker.worker_id)).log("TIP1: Tx ID: {0} | Worker ID: {1} | F1 Score: {2:.5f}".format(sorted_by_value[0][0], sorted_by_value[0][1][1], sorted_by_value[0][1][0]))
-                Logger(str(local_worker.worker_id)).log("TIP2: Tx ID: {0} | Worker ID: {1} | F1 Score: {2:.5f}".format(sorted_by_value[1][0], sorted_by_value[1][1][1], sorted_by_value[1][1][0]))
+                Logger(str(local_worker.worker_id)).log("TIP1: Tx ID: {0} | Worker ID: {1} | Score: {2:.5f}".format(sorted_by_value[0][0], sorted_by_value[0][1][1], sorted_by_value[0][1][0]))
+                Logger(str(local_worker.worker_id)).log("TIP2: Tx ID: {0} | Worker ID: {1} | Score: {2:.5f}".format(sorted_by_value[1][0], sorted_by_value[1][1][1], sorted_by_value[1][1][0]))
                 Logger(str(local_worker.worker_id)).log("{0} -> {1} | {0} -> {2}".format(local_worker.worker_id, sorted_by_value[0][1][1], sorted_by_value[1][1][1]))
 
             # transaction ID 값을 저장한다.
@@ -241,6 +276,16 @@ def proof_of_work(previous_hashes, transaction_dict):
 
     return nonce
 
+def count_list_overlap(lists):
+    count = {}
+
+    for i in lists:
+        try:
+            count[i] += 1
+        except:
+            count[i] = 1
+
+    return count
 
 def generate_transactions(initial=False, initial_count=5, tip_selection_algo='weighted_random_walk', payload=None, local_worker=None):
     if initial:

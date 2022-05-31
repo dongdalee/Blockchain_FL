@@ -1,7 +1,7 @@
 # main
 WORKER_NUM = 5  # total number of  local worker in shard
 TOTAL_ROUND = 3  # total round (number of for loop)
-TRAINING_EPOCH = 1  # training epochs each round
+TRAINING_EPOCH = 0  # training epochs each round
 
 ASYNC_TRAINING = True
 
@@ -55,12 +55,13 @@ label = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']  # Mnist
 sub_label = ['0', '1']
 
 # model weight attack
-POISON_WORKER = ['worker0', 'worker1', 'worker2']
+POISON_WORKER = []
 GAUSSIAN_MEAN = 0
 GAUSSIAN_SIGMA = 2
-COWORK = True
+COWORK = False
 MALICIOUS_LEADER = ["worker0"]
 
 # total number of upload models list
 UPLOAD_MODEL_NUM = 3
 MULTI_UPLOAD = False
+

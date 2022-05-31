@@ -11,7 +11,6 @@ class transaction_block:
         self.nonce = nonce
         self.previous_hashes = previous_hashes
         self.approved_tx = approved_tx,
-        # self.payload = ''
         self.timestamp = time.time(),
         self.signature = signature
         self.recipient_public_key = recipient_public_key
