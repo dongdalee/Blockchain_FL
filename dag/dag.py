@@ -10,11 +10,14 @@ from worker import Worker
 import transaction as tx
 import parameter as p
 from util import Logger, vector_similarity
+from round_checker import current_round_checker
+
+current_round = current_round_checker()
 
 GENESIS_ID = str(uuid4()).replace('-', '')
 
 GENESIS_KEYS = wallet.generate_wallet(inital=True)
-GENESIS_WORKER = Worker('genesis_worker', 0.001, False)
+GENESIS_WORKER = Worker('genesis_worker', current_round=current_round, poisoned=False)
 
 
 class Tangle:
@@ -211,7 +214,7 @@ class Tangle:
                         multiplicity = 0
                     # ========================================================================================
                     model_dict[target.tx_id] = (accuracy / 100) + (similarity / 5) - multiplicity, own_worker_id
-                    Logger(str(local_worker.worker_id)).log("Worker: {0}, F1 Score: {1:.5f}, {2} Similarity: {3:.2f} Multiplicity {4}".format(target.tx_worker_id, accuracy/100, p.SIMILARITY, similarity/5, multiplicity))
+                    Logger(str(local_worker.worker_id)).log("Worker: {0}, F1 Score: {1:.5f}, {2} Similarity: {3:.2f} Multiplicity -{4}".format(target.tx_worker_id, accuracy/100, p.SIMILARITY, similarity/5, multiplicity))
                 else:
                     model_dict[target.tx_id] = accuracy, own_worker_id
                     Logger(str(local_worker.worker_id)).log("Worker: {0}, F1 Score: {1:.5f}".format(target.tx_worker_id, accuracy))

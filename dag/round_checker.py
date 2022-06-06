@@ -26,3 +26,16 @@ def current_round_checker():
         print("############## Global Current Round: {0} ##############".format(str(int(max(last_round)) + 1)))
 
         return int(max(last_round)) + 1
+
+def worker_current_round_chcker():
+    check_first = model_loader()
+
+    if len(check_first) == 0:
+        print("Current Round: 1")
+
+        return 1
+    else:
+        last_round = model_loader()
+        print("Current Round: {0}".format(str(int(max(last_round)))))
+
+        return int(max(last_round))

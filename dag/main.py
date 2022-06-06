@@ -3,7 +3,6 @@ from matplotlib import pyplot as plt
 from random import *
 import torch
 import os
-
 import dag
 import util
 from util import Logger
@@ -14,16 +13,16 @@ import numpy as np
 import client_sender as sender
 import client_receiver as receiver
 import data_indexing as indexing
-from round_checker import current_round_checker
+from round_checker import worker_current_round_chcker
+
 warnings.filterwarnings(action='ignore')
 
 # set current round
-current_round = current_round_checker()
+current_round = worker_current_round_chcker()
 
 worker_list = []
 worker_id_list = []
 delayed_worker_list = []
-
 
 if __name__ == "__main__":
 
@@ -32,6 +31,7 @@ if __name__ == "__main__":
         for i in range(0, p.WORKER_NUM):
             worker_id = 'worker' + str(i)
             worker_id_list.append(worker_id)
+
 
     def poisson():
         participate_worker_list = []
@@ -230,7 +230,7 @@ if __name__ == "__main__":
 
         Logger("transaction").log("next shard status: {0}".format(p.shard_list))
 
-        train_index_info = indexing.worker_to_index("train", p.shard_list,)
+        train_index_info = indexing.worker_to_index("train", p.shard_list, )
         test_index_info = indexing.worker_to_index("test", p.shard_list, )
 
         PAYLOAD = {
@@ -244,12 +244,11 @@ if __name__ == "__main__":
 
         sender.send_file(p.MIGRATION_SERVER_HOST, p.MIGRATION_SERVER_PORT, p.SAVE_MIGRATION_INFO_PATH)
         receiver.runReceiver(True)
-    
+
         # data_classifier.migrate_worker()
 
     # main handler
     # ===============================================================================================================================
     create_worker()
-    dag.generate_transactions(initial=True, initial_count=2)
+    dag.generate_transactions(initial=True, initial_count=1)
     handler()
-
