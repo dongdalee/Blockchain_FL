@@ -197,13 +197,13 @@ class Tangle:
                 model = target.get_payload()
                 own_worker_id = target.tx_worker_id
                 accuracy = local_worker.evaluation(model, False)
-                if p.SIMILARITY == "cosine":
+
+                # Accuracy + Cosine similarity + Multiplicity
+                if p.MODE == "CosineMulti":
                     similarity = vector_similarity(local_worker.model, model)
                     # ========================================================================================
                     multiset_list = self.DFS(target.tx_id)
-                    # print(multiset_list)
                     multiset_dict = count_list_overlap(multiset_list)
-                    # print(multiset_dict)
                     multiset = multiset_dict.values()
 
                     try:
@@ -215,6 +215,29 @@ class Tangle:
                     # ========================================================================================
                     model_dict[target.tx_id] = (accuracy / 100) + (similarity / 5) - multiplicity, own_worker_id
                     Logger(str(local_worker.worker_id)).log("Worker: {0}, F1 Score: {1:.5f}, {2} Similarity: {3:.2f} Multiplicity -{4}".format(target.tx_worker_id, accuracy/100, p.SIMILARITY, similarity/5, multiplicity))
+
+                # Accuracy + Cosine similarity
+                elif p.MODE == "Cosine":
+                    similarity = vector_similarity(local_worker.model, model)
+                    model_dict[target.tx_id] = (accuracy / 100) + (similarity / 5), own_worker_id
+                    Logger(str(local_worker.worker_id)).log("Worker: {0}, F1 Score: {1:.5f}, {2} Similarity: {3:.2f}".format(target.tx_worker_id, accuracy / 100, p.SIMILARITY, similarity / 5))
+
+                # Accuracy - Multiplicity
+                elif p.MODE == "Multi":
+                    multiset_list = self.DFS(target.tx_id)
+                    multiset_dict = count_list_overlap(multiset_list)
+                    multiset = multiset_dict.values()
+
+                    try:
+                        multiset_value = max(multiset)
+                        total = sum(multiset)
+                        multiplicity = multiset_value / total
+                    except ZeroDivisionError:
+                        multiplicity = 0
+                    model_dict[target.tx_id] = (accuracy / 100) - multiplicity, own_worker_id
+                    Logger(str(local_worker.worker_id)).log("Worker: {0}, F1 Score: {1:.5f}, Multiplicity -{2}".format(target.tx_worker_id, accuracy / 100, multiplicity))
+
+                # Accuracy
                 else:
                     model_dict[target.tx_id] = accuracy, own_worker_id
                     Logger(str(local_worker.worker_id)).log("Worker: {0}, F1 Score: {1:.5f}".format(target.tx_worker_id, accuracy))
