@@ -13,6 +13,8 @@ MAX_EPOCH = 5
 TIP_SELECT_ALGO = 'high_accuracy'
 LEARNING_MEASURE = "f1 score"
 SIMILARITY = "cosine"
+SIMILARITY_WEIGHT = 0.05
+MODE = "Cosine"
 
 # possion parameter
 LAM = 8
