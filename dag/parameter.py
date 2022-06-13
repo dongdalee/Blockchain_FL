@@ -14,8 +14,8 @@ TIP_SELECT_ALGO = 'high_accuracy'
 LEARNING_MEASURE = "f1 score"
 SIMILARITY = "cosine"
 SIMILARITY_WEIGHT = 0.05
-MODE = "Cosine"
-
+MULTIPLICITY_WEIGHT = 0.01
+MODE = "MultiObject"
 # possion parameter
 LAM = 8
 SIZE = TOTAL_ROUND
