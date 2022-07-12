@@ -105,6 +105,9 @@ class Tangle:
 
 
     def find_tips(self, algo='weighted_random_walk', local_worker=None):
+        # if algo=='random_tip_selection':
+        #     return list(random.sample(set(list(self.transactions.keys())[-2:]), 2))
+        
         # malicious node들이 협력할 때
         if local_worker.worker_id in p.POISON_WORKER and p.COWORK:
             print(">~~~~~~~~~ Select Malicious Leader Model {0} ~~~~~~~~~<".format(p.MALICIOUS_LEADER))
@@ -153,8 +156,8 @@ class Tangle:
             Logger(str(local_worker.worker_id)).log("{0} -> {1} | {0} -> {2}".format(local_worker.worker_id, self.transactions[tips_list[0]].tx_worker_id, self.transactions[tips_list[1]].tx_worker_id))
 
             return tips_list
-
-        if algo == 'weighted_random_walk':
+          
+        elif algo == 'weighted_random_walk':
             tips_list = []
             for n in range(2):
                 tips_dict = {}
@@ -255,6 +258,7 @@ class Tangle:
         else:
             tips_list = random.sample(list(self.transactions.keys()), 2)
             local_worker.approve_list[local_worker.round] = tips_list
+            Logger(str(local_worker.worker_id)).log("TIP1: Tx ID: {0} | TIP2 Tx: ID: {1}".format(tips_list[0], tips_list[1]))
             return tips_list
 
 

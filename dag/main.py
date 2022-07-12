@@ -139,7 +139,12 @@ if __name__ == "__main__":
                     continue
 
                 Logger(str(worker_list[i].worker_id)).log("========== [{0}] transaction invoke ==========".format(worker_list[i].worker_id))
-                dag.generate_transactions(tip_selection_algo=p.TIP_SELECT_ALGO, payload=worker_list[i].model, local_worker=worker_list[i])
+                # tip selection algorithm
+                if worker_list[i].worker_id in p.POISON_WORKER:
+                    print("Random Tip Selection")
+                    dag.generate_transactions(tip_selection_algo="random_tip_selection", payload=worker_list[i].model, local_worker=worker_list[i])
+                else:
+                    dag.generate_transactions(tip_selection_algo=p.TIP_SELECT_ALGO, payload=worker_list[i].model, local_worker=worker_list[i])
                 log_worker_accuracy_prev = worker_list[i].evaluation(worker_list[i].model, True)
                 Logger(str(worker_list[i].worker_id)).log("previous worker accuracy: {0}".format(log_worker_accuracy_prev))
 
