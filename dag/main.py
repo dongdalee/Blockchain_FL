@@ -126,8 +126,12 @@ if __name__ == "__main__":
             for i in train_worker_index:
                 # model weight attack
                 if worker_list[i].worker_id in p.POISON_WORKER and worker_list[i].worker_id in participate_worker[shard_round - 1]:
-                    Logger(str(worker_list[i].worker_id)).log("<~~~~~~~~~~~~~~~~~ Poison Attack ~~~~~~~~~~~~~~~~~>".format(shard_round))
-                    worker_list[i].weight_poison_attack()
+                    if p.ATTACK_TYPE == "MODEL_POISONING":
+                        Logger(str(worker_list[i].worker_id)).log("<~~~~~~~~~~~~~~~~~ Model Poisoning Attack ~~~~~~~~~~~~~~~~~>".format(shard_round))
+                        worker_list[i].weight_poison_attack()
+                    elif p.ATTACK_TYPE == "FGSM":
+                        Logger(str(worker_list[i].worker_id)).log("<~~~~~~~~~~~~~~~~~ FGSM Attack ~~~~~~~~~~~~~~~~~>".format(shard_round))
+                        worker_list[i].FGSM_attack(training_epochs=p.TRAINING_EPOCH)
                 elif worker_list[i].worker_id in participate_worker[shard_round - 1]:  # 학습 부분
                     Logger(str(worker_list[i].worker_id)).log("<=================== Round: {0} ===================>".format(shard_round))
                     worker_list[i].total_training_epoch += p.TRAINING_EPOCH

@@ -1,6 +1,6 @@
-import torch.nn.init
 import warnings
 import torch.nn.init
+import torch.nn.functional as F
 from torch import nn
 from functools import reduce
 import os
@@ -70,14 +70,43 @@ class Worker:
         for epoch in range(training_epochs):
             avg_cost = 0
 
-            for X, Y in self.data_loader:  # 미니 배치 단위로 꺼내온다. X는 미니 배치, Y느 ㄴ레이블.
-                # image is already size of (28x28), no reshape
-                X = X.to(device)
-                Y = Y.to(device)
+            for data, target in self.data_loader:  # 미니 배치 단위로 꺼내온다. X는 미니 배치, Y느 ㄴ레이블.
+                data, target = data.to(device), target.to(device)
+                # target = target.to(device)
 
                 self.optimizer.zero_grad()
-                hypothesis = self.model(X)
-                cost = self.criterion(hypothesis, Y)
+                hypothesis = self.model(data)
+                cost = self.criterion(hypothesis, target)
+                cost.backward()
+                self.optimizer.step()
+
+                avg_cost += cost / self.total_batch
+            Logger(str(self.worker_id)).log('[Epoch: {:>4}] cost = {:>.9}'.format(epoch + 1, avg_cost))
+
+
+    def FGSM_attack(self, training_epochs=0):
+        for epoch in range(training_epochs):
+            avg_cost = 0
+
+            for data, target in self.data_loader:
+                data, target = data.to(device), target.to(device)
+                data.requires_grad = True
+                output = self.model(data)
+                init_pred = output.max(1, keepdim=True)[1]
+
+                # if init_pred.item() != target.item():
+                #     continue
+
+                loss = F.nll_loss(output, target)
+                self.model.zero_grad()
+                loss.backward()
+                data_grad = data.grad.data
+
+                data = FGSM(data, p.EPSILON, data_grad)
+
+                self.optimizer.zero_grad()
+                hypothesis = self.model(data)
+                cost = self.criterion(hypothesis, target)
                 cost.backward()
                 self.optimizer.step()
 
@@ -207,6 +236,13 @@ def noise_constructor(dim):
     noise_tensor = torch.Tensor(noise_dim_split)
 
     return noise_tensor
+
+
+def FGSM(data, epsilon, data_grad):
+    pert_out = data + epsilon * data_grad.sign()
+    pert_out = torch.clamp(pert_out, 0, 1)
+
+    return pert_out
 
 
 
