@@ -11,6 +11,8 @@ from util import Logger, gaussian_distribution
 import parameter as p
 import numpy as np
 from sklearn.metrics import f1_score, accuracy_score
+import torchattacks
+
 warnings.filterwarnings(action='ignore')
 
 # GPU가 없을 경우, CPU를 사용한다.
@@ -85,24 +87,39 @@ class Worker:
 
 
     def FGSM_attack(self, training_epochs=0):
+        Logger(str(self.worker_id)).log('Input training epochs: {0}'.format(training_epochs))
+        Logger(str(self.worker_id)).log('Total training epochs: {0}'.format(self.total_training_epoch))
+
         for epoch in range(training_epochs):
             avg_cost = 0
 
+            fgsm = torchattacks.FGSM(self.model, eps=p.EPSILON)
+
             for data, target in self.data_loader:
                 data, target = data.to(device), target.to(device)
-                data.requires_grad = True
-                output = self.model(data)
-                init_pred = output.max(1, keepdim=True)[1]
+                data = fgsm(data, target)
 
-                # if init_pred.item() != target.item():
-                #     continue
+                self.optimizer.zero_grad()
+                hypothesis = self.model(data)
+                cost = self.criterion(hypothesis, target)
+                cost.backward()
+                self.optimizer.step()
 
-                loss = F.nll_loss(output, target)
-                self.model.zero_grad()
-                loss.backward()
-                data_grad = data.grad.data
+                avg_cost += cost / self.total_batch
+            Logger(str(self.worker_id)).log('[Epoch: {:>4}] cost = {:>.9}'.format(epoch + 1, avg_cost))
 
-                data = FGSM(data, p.EPSILON, data_grad)
+    def PGD_attack(self, training_epochs=0):
+        Logger(str(self.worker_id)).log('Input training epochs: {0}'.format(training_epochs))
+        Logger(str(self.worker_id)).log('Total training epochs: {0}'.format(self.total_training_epoch))
+
+        for epoch in range(training_epochs):
+            avg_cost = 0
+
+            pgd = torchattacks.PGD(self.model, eps=p.EPSILON, alpha=p.ALPHA, steps=p.STEP)
+
+            for data, target in self.data_loader:
+                data, target = data.to(device), target.to(device)
+                data = pgd(data, target)
 
                 self.optimizer.zero_grad()
                 hypothesis = self.model(data)

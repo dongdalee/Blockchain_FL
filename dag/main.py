@@ -132,6 +132,9 @@ if __name__ == "__main__":
                     elif p.ATTACK_TYPE == "FGSM":
                         Logger(str(worker_list[i].worker_id)).log("<~~~~~~~~~~~~~~~~~ FGSM Attack ~~~~~~~~~~~~~~~~~>".format(shard_round))
                         worker_list[i].FGSM_attack(training_epochs=p.TRAINING_EPOCH)
+                    elif p.ATTACK_TYPE == "PGD":
+                        Logger(str(worker_list[i].worker_id)).log("<~~~~~~~~~~~~~~~~~ PGD Attack ~~~~~~~~~~~~~~~~~>".format(shard_round))
+                        worker_list[i].PGD_attack(training_epochs=p.TRAINING_EPOCH)
                 elif worker_list[i].worker_id in participate_worker[shard_round - 1]:  # 학습 부분
                     Logger(str(worker_list[i].worker_id)).log("<=================== Round: {0} ===================>".format(shard_round))
                     worker_list[i].total_training_epoch += p.TRAINING_EPOCH

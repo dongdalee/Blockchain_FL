@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-"""
 BLOCK_NUM = 30
 
 total_cumultive_weight = {'worker0' : 0, 'worker1' : 0, 'worker2' : 0, 'worker3' : 0, 'worker4' : 0, 'worker5' : 0, 'worker6' : 0, 'worker7' : 0, 'worker8' : 0, 'worker9' : 0}
@@ -34,7 +33,7 @@ for shard in range(1, 6):
 
 print(total_cumultive_weight)
 
-"""
+
 # =========================================================================================================================================
 """
 malicious1 = [35, 11, 9, 0, 1, 1, 2, 4, 2, 1, 0, 0, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 5, 0]

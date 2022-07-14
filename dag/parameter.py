@@ -68,6 +68,10 @@ MALICIOUS_LEADER = ["worker0"]
 # FGSM attack
 EPSILON = 0.9
 
+# PGD Attack
+ALPHA = 0.5
+STEP = 40
+
 # total number of upload models list
 UPLOAD_MODEL_NUM = 3
 MULTI_UPLOAD = False
