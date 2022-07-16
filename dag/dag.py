@@ -216,6 +216,8 @@ class Tangle:
                     except ZeroDivisionError:
                         multiplicity = 0
                     # ========================================================================================
+                    if target.tx_worker_id == "genesis_worker":
+                        multiplicity = 0
                     model_dict[target.tx_id] = (accuracy / 100) + (p.SIMILARITY_WEIGHT * similarity) - (p.MULTIPLICITY_WEIGHT * multiplicity), own_worker_id
                     Logger(str(local_worker.worker_id)).log("Worker: {0}, F1 Score: {1:.5f}, {2} Similarity: {3:.2f} Multiplicity -{4}".format(target.tx_worker_id, accuracy/100, p.SIMILARITY, similarity/5, multiplicity))
 

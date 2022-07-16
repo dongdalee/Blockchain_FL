@@ -56,10 +56,10 @@ label = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']  # Mnist
 # sub_label = ['airplane', 'automobile']
 sub_label = ['0', '1']
 
-ATTACK_TYPE = "FGSM"
+ATTACK_TYPE = "MODEL_POISONING"
 
 # model weight attack
-POISON_WORKER = ["worker0"]
+POISON_WORKER = []
 GAUSSIAN_MEAN = 0
 GAUSSIAN_SIGMA = 2
 COWORK = False
