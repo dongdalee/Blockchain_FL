@@ -42,9 +42,11 @@ class Worker:
         self.origin_test_loader = dataloader.origin_test_loader()
 
         self.model = CNN().to(device)
+        self.trained_model = CNN().to(device)
 
         if current_round-1 > 0:
             self.model.load_state_dict(torch.load("./model/" + str(current_round - 1) + "/aggregation.pt"), strict=False)
+            self.trained_model.load_state_dict(torch.load("./model/" + str(current_round - 1) + "/aggregation.pt"), strict=False)
             print("[{0}]: global model inital".format(self.worker_id))
 
         """
@@ -122,7 +124,7 @@ class Worker:
         for epoch in range(training_epochs):
             avg_cost = 0
 
-            fgsm = torchattacks.FGSM(self.model, eps=p.EPSILON)
+            fgsm = torchattacks.FGSM(self.trained_model, eps=p.EPSILON)
 
             for data, target in self.data_loader:
                 data, target = data.to(device), target.to(device)
