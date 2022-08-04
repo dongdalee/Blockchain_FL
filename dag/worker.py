@@ -87,36 +87,6 @@ class Worker:
                 avg_cost += cost / self.total_batch
             Logger(str(self.worker_id)).log('[Epoch: {:>4}] cost = {:>.9}'.format(epoch + 1, avg_cost))
 
-    """
-    def FGSM_attack(self, training_epochs=0):
-        Logger(str(self.worker_id)).log('Input training epochs: {0}'.format(training_epochs))
-        Logger(str(self.worker_id)).log('Total training epochs: {0}'.format(self.total_training_epoch))
-
-        for epoch in range(training_epochs):
-            avg_cost = 0
-
-            for data, target in self.data_loader:
-                data, target = data.to(device), target.to(device)
-                data.requires_grad = True
-                output = self.model(data)
-
-                loss = F.nll_loss(output, target)
-                self.model.zero_grad()
-                loss.backward()
-                data_grad = data.grad.data
-
-                data = FGSM(data, p.EPSILON, data_grad)
-
-                self.optimizer.zero_grad()
-                hypothesis = self.model(data)
-                cost = self.criterion(hypothesis, target)
-                cost.backward()
-                self.optimizer.step()
-
-                avg_cost += cost / self.total_batch
-            Logger(str(self.worker_id)).log('[Epoch: {:>4}] cost = {:>.9}'.format(epoch + 1, avg_cost))
-    """
-
     def FGSM_attack(self, training_epochs=0):
         Logger(str(self.worker_id)).log('Input training epochs: {0}'.format(training_epochs))
         Logger(str(self.worker_id)).log('Total training epochs: {0}'.format(self.total_training_epoch))
@@ -139,18 +109,15 @@ class Worker:
                 avg_cost += cost / self.total_batch
             Logger(str(self.worker_id)).log('[Epoch: {:>4}] cost = {:>.9}'.format(epoch + 1, avg_cost))
 
-    def PGD_attack(self, training_epochs=0):
+    def label_flipping_attack(self, training_epochs=0):
         Logger(str(self.worker_id)).log('Input training epochs: {0}'.format(training_epochs))
         Logger(str(self.worker_id)).log('Total training epochs: {0}'.format(self.total_training_epoch))
 
         for epoch in range(training_epochs):
             avg_cost = 0
 
-            pgd = torchattacks.PGD(self.model, eps=p.EPSILON, alpha=p.ALPHA, steps=p.STEP)
-
-            for data, target in self.data_loader:
+            for data, target in self.data_loader:  # 미니 배치 단위로 꺼내온다. X는 미니 배치, Y느 ㄴ레이블.
                 data, target = data.to(device), target.to(device)
-                data = pgd(data, target)
 
                 self.optimizer.zero_grad()
                 hypothesis = self.model(data)
@@ -160,7 +127,6 @@ class Worker:
 
                 avg_cost += cost / self.total_batch
             Logger(str(self.worker_id)).log('[Epoch: {:>4}] cost = {:>.9}'.format(epoch + 1, avg_cost))
-
 
     def test_label_predictions(self, model, mode="normal", print_logs=False):
         model.eval()
