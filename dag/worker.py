@@ -49,17 +49,6 @@ class Worker:
             self.trained_model.load_state_dict(torch.load("./model/" + str(current_round - 1) + "/aggregation.pt"), strict=False)
             print("[{0}]: global model inital".format(self.worker_id))
 
-        """
-        try:
-            model_list = os.listdir("./model/" + str(current_round-1) + "/")
-            if "aggregation.pt" in model_list:
-                print("[{0}]: global model inital".format(self.worker_id))
-                self.model.load_state_dict(torch.load("./model/" + str(current_round-1) + "/aggregation.pt"), strict=False)
-        except Exception as e:
-            print("Error {0}".format(e))
-            pass
-        """
-
         self.criterion = nn.CrossEntropyLoss()
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=p.LEARNING_RATE)
         self.total_batch = len(self.data_loader)
@@ -87,6 +76,7 @@ class Worker:
                 avg_cost += cost / self.total_batch
             Logger(str(self.worker_id)).log('[Epoch: {:>4}] cost = {:>.9}'.format(epoch + 1, avg_cost))
 
+
     def FGSM_attack(self, training_epochs=0):
         Logger(str(self.worker_id)).log('Input training epochs: {0}'.format(training_epochs))
         Logger(str(self.worker_id)).log('Total training epochs: {0}'.format(self.total_training_epoch))
@@ -109,6 +99,7 @@ class Worker:
                 avg_cost += cost / self.total_batch
             Logger(str(self.worker_id)).log('[Epoch: {:>4}] cost = {:>.9}'.format(epoch + 1, avg_cost))
 
+
     def label_flipping_attack(self, training_epochs=0):
         Logger(str(self.worker_id)).log('Input training epochs: {0}'.format(training_epochs))
         Logger(str(self.worker_id)).log('Total training epochs: {0}'.format(self.total_training_epoch))
@@ -127,6 +118,28 @@ class Worker:
 
                 avg_cost += cost / self.total_batch
             Logger(str(self.worker_id)).log('[Epoch: {:>4}] cost = {:>.9}'.format(epoch + 1, avg_cost))
+
+
+    def data_noise_attack(self, training_epochs=0):
+        Logger(str(self.worker_id)).log('Input training epochs: {0}'.format(training_epochs))
+        Logger(str(self.worker_id)).log('Total training epochs: {0}'.format(self.total_training_epoch))
+
+        for epoch in range(training_epochs):
+            avg_cost = 0
+
+            for data, target in self.data_loader:  # 미니 배치 단위로 꺼내온다. X는 미니 배치, Y느 ㄴ레이블.
+                data, target = data.to(device), target.to(device)
+                data = add_noise(data, p.NOISE_SIGMA)
+
+                self.optimizer.zero_grad()
+                hypothesis = self.model(data)
+                cost = self.criterion(hypothesis, target)
+                cost.backward()
+                self.optimizer.step()
+
+                avg_cost += cost / self.total_batch
+            Logger(str(self.worker_id)).log('[Epoch: {:>4}] cost = {:>.9}'.format(epoch + 1, avg_cost))
+
 
     def test_label_predictions(self, model, mode="normal", print_logs=False):
         model.eval()
@@ -240,7 +253,7 @@ class Worker:
         self.model.fc2.weight.data += noise_constructor(self.model.fc2.weight.size())
         self.model.fc2.bias.data += noise_constructor(self.model.fc2.bias.size())
 
-
+# for model poisoning attack
 def noise_constructor(dim):
     tensor_length = reduce(lambda x, y: x * y, dim)
     gaussian = gaussian_distribution(GAUSSIAN_RANGE, p.GAUSSIAN_MEAN, p.GAUSSIAN_SIGMA)
@@ -257,6 +270,16 @@ def FGSM(data, epsilon, data_grad):
     pert_out = torch.clamp(pert_out, 0, 1)
 
     return pert_out
+
+# for data poisoning attack
+def add_noise(_data, sigma):
+    # gaussian noise
+    # randan: N(0,1)-평균:0, 표준편차1 인 가우시안 분포를 따르는 값을 생성한다.
+    noise = sigma * torch.randn(100, 1, 28, 28) # MNIST image set
+    # noise = torch.randn_like(inputs) * sigma # 정규분포상의 랜덤값
+    contaminate_data = _data + noise
+
+    return contaminate_data
 
 
 

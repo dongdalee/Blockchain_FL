@@ -138,6 +138,9 @@ if __name__ == "__main__":
                     elif p.ATTACK_TYPE == "LABEL_FLIP_ATTACK":
                         Logger(str(worker_list[i].worker_id)).log("<~~~~~~~~~~~~~~~~~ Label Flipping Attack ~~~~~~~~~~~~~~~~~>".format(shard_round))
                         worker_list[i].label_flipping_attack(training_epochs=p.TRAINING_EPOCH)
+                    elif p.ATTACK_TYPE == "NOISE_ATTACK":
+                        Logger(str(worker_list[i].worker_id)).log("<~~~~~~~~~~~~~~~~~ Data Noise Attack ~~~~~~~~~~~~~~~~~>".format(shard_round))
+                        worker_list[i].data_noise_attack(training_epochs=p.TRAINING_EPOCH)
                 elif worker_list[i].worker_id in participate_worker[shard_round - 1]:  # 학습 부분
                     Logger(str(worker_list[i].worker_id)).log("<=================== Round: {0} ===================>".format(shard_round))
                     worker_list[i].total_training_epoch += p.TRAINING_EPOCH

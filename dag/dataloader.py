@@ -43,16 +43,16 @@ class MyCifarSet(Dataset):
 
 
 def set_dataloader(worker_id):
-    # if worker_id == 'genesis_worker':
-    #     DATA_PATH_TRAINING_LIST = glob('./data/' + 'worker0' + '/train/*/*.jpg')
-    #     DATA_PATH_TESTING_LIST = glob('./data/' + 'worker0' + '/test/*/*.jpg')
-    #     print("genesis worker data loaded!")
-    # else:
-    #     DATA_PATH_TRAINING_LIST = glob('./data/' + str(worker_id) + '/train/*/*.jpg')
-    #     DATA_PATH_TESTING_LIST = glob('./data/' + str(worker_id) + '/test/*/*.jpg')
-    #     print("{0} data loaded!".format(worker_id))
-    DATA_PATH_TRAINING_LIST = glob('./data/mnist_png/train/*/*.png')
-    DATA_PATH_TESTING_LIST = glob('./data/mnist_png/test/*/*.png')
+    if worker_id == 'genesis_worker':
+        DATA_PATH_TRAINING_LIST = glob('./data/' + 'worker0' + '/train/*/*.png')
+        DATA_PATH_TESTING_LIST = glob('./data/' + 'worker0' + '/test/*/*.png')
+        print("genesis worker data loaded!")
+    else:
+        DATA_PATH_TRAINING_LIST = glob('./data/' + str(worker_id) + '/train/*/*.png')
+        DATA_PATH_TESTING_LIST = glob('./data/' + str(worker_id) + '/test/*/*.png')
+        print("{0} data loaded!".format(worker_id))
+    # DATA_PATH_TRAINING_LIST = glob('./data/mnist_png/train/*/*.png')
+    # DATA_PATH_TESTING_LIST = glob('./data/mnist_png/test/*/*.png')
 
     trainloader = torch.utils.data.DataLoader(
         MyCifarSet(

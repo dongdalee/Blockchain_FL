@@ -56,14 +56,14 @@ label = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']  # Mnist
 # sub_label = ['airplane', 'automobile']
 sub_label = ['0', '1']
 
-ATTACK_TYPE = "MODEL_POISONING"
+ATTACK_TYPE = "NOISE_ATTACK"
 
 # model weight attack
 POISON_WORKER = []
 GAUSSIAN_MEAN = 0
 GAUSSIAN_SIGMA = 2
 COWORK = False
-MALICIOUS_LEADER = ["worker0"]
+MALICIOUS_LEADER = []
 
 # FGSM attack
 EPSILON = 0.9
@@ -71,6 +71,9 @@ EPSILON = 0.9
 # PGD Attack
 ALPHA = 0.5
 STEP = 40
+
+# Gaussian Noise Attack
+NOISE_SIGMA = 9
 
 # total number of upload models list
 UPLOAD_MODEL_NUM = 3
