@@ -275,8 +275,8 @@ def FGSM(data, epsilon, data_grad):
 def add_noise(_data, sigma):
     # gaussian noise
     # randan: N(0,1)-평균:0, 표준편차1 인 가우시안 분포를 따르는 값을 생성한다.
-    noise = sigma * torch.randn(100, 1, 28, 28) # MNIST image set
-    # noise = torch.randn_like(inputs) * sigma # 정규분포상의 랜덤값
+    # noise = sigma * torch.randn(100, 1, 28, 28) # MNIST image set
+    noise = torch.normal(mean=p.NOISE_MEAN, std=p.NOISE_STD, size=(100, 1, 28, 28))
     contaminate_data = _data + noise
 
     return contaminate_data

@@ -73,7 +73,8 @@ ALPHA = 0.5
 STEP = 40
 
 # Gaussian Noise Attack
-NOISE_SIGMA = 9
+NOISE_MEAN = 10
+NOISE_STD = 1
 
 # total number of upload models list
 UPLOAD_MODEL_NUM = 3
