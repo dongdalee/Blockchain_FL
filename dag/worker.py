@@ -12,6 +12,7 @@ import parameter as p
 import numpy as np
 from sklearn.metrics import f1_score, accuracy_score
 import torchattacks
+from util import quantize
 
 warnings.filterwarnings(action='ignore')
 
@@ -76,6 +77,22 @@ class Worker:
                 avg_cost += cost / self.total_batch
             Logger(str(self.worker_id)).log('[Epoch: {:>4}] cost = {:>.9}'.format(epoch + 1, avg_cost))
 
+        if p.QUANTIZATION:
+            self.model.layer1[0].weight.data = quantize(self.model.layer1[0].weight.data)
+            self.model.layer1[0].bias.data = quantize(self.model.layer1[0].bias.data)
+
+            self.model.layer2[0].weight.data = quantize(self.model.layer2[0].weight.data)
+            self.model.layer2[0].bias.data = quantize(self.model.layer2[0].bias.data)
+
+            self.model.layer3[0].weight.data = quantize(self.model.layer3[0].weight.data)
+            self.model.layer3[0].bias.data = quantize(self.model.layer3[0].bias.data)
+
+            self.model.fc1.weight.data = quantize(self.model.fc1.weight.data)
+            self.model.fc1.bias.data = quantize(self.model.fc1.bias.data)
+
+            self.model.fc2.weight.data = quantize(self.model.fc2.weight.data)
+            self.model.fc2.bias.data = quantize(self.model.fc2.bias.data)
+
 
     def FGSM_attack(self, training_epochs=0):
         Logger(str(self.worker_id)).log('Input training epochs: {0}'.format(training_epochs))
@@ -129,7 +146,7 @@ class Worker:
 
             for data, target in self.data_loader:  # 미니 배치 단위로 꺼내온다. X는 미니 배치, Y느 ㄴ레이블.
                 data, target = data.to(device), target.to(device)
-                data = add_noise(data, p.NOISE_SIGMA)
+                data = add_noise(data)
 
                 self.optimizer.zero_grad()
                 hypothesis = self.model(data)
@@ -272,11 +289,11 @@ def FGSM(data, epsilon, data_grad):
     return pert_out
 
 # for data poisoning attack
-def add_noise(_data, sigma):
+def add_noise(_data):
     # gaussian noise
     # randan: N(0,1)-평균:0, 표준편차1 인 가우시안 분포를 따르는 값을 생성한다.
     # noise = sigma * torch.randn(100, 1, 28, 28) # MNIST image set
-    noise = torch.normal(mean=p.NOISE_MEAN, std=p.NOISE_STD, size=(100, 1, 28, 28))
+    noise = torch.normal(mean=p.NOISE_MEAN, std=p.NOISE_STD, size=(_data.size()))
     contaminate_data = _data + noise
 
     return contaminate_data

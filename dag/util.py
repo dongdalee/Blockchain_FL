@@ -6,7 +6,7 @@ import logging
 import numpy as np
 from sklearn.metrics import confusion_matrix
 from scipy.spatial.distance import cityblock, cosine
-
+import torch
 
 import dag
 import parameter as p
@@ -183,24 +183,30 @@ def gaussian_distribution(x, mean, sigma):
 
 
 def vector_similarity(model1, model2):
-    if p.SIMILARITY == "cosine":  # 클 수록 비슷하다.
-        layer1 = 1 - cosine(model1.layer1[0].weight.data.numpy().reshape(-1, ), model2.layer1[0].weight.data.numpy().reshape(-1, ))
-        layer2 = 1 - cosine(model1.layer2[0].weight.data.numpy().reshape(-1, ), model2.layer2[0].weight.data.numpy().reshape(-1, ))
-        layer3 = 1 - cosine(model1.layer3[0].weight.data.numpy().reshape(-1, ), model2.layer3[0].weight.data.numpy().reshape(-1, ))
-        fc1 = 1 - cosine(model1.fc1.weight.data.numpy().reshape(-1, ), model2.fc1.weight.data.numpy().reshape(-1, ))
-        fc2 = 1 - cosine(model1.fc2.weight.data.numpy().reshape(-1, ), model2.fc2.weight.data.numpy().reshape(-1, ))
+    layer1 = 1 - cosine(model1.layer1[0].weight.data.numpy().reshape(-1, ), model2.layer1[0].weight.data.numpy().reshape(-1, ))
+    layer2 = 1 - cosine(model1.layer2[0].weight.data.numpy().reshape(-1, ), model2.layer2[0].weight.data.numpy().reshape(-1, ))
+    layer3 = 1 - cosine(model1.layer3[0].weight.data.numpy().reshape(-1, ), model2.layer3[0].weight.data.numpy().reshape(-1, ))
+    fc1 = 1 - cosine(model1.fc1.weight.data.numpy().reshape(-1, ), model2.fc1.weight.data.numpy().reshape(-1, ))
+    fc2 = 1 - cosine(model1.fc2.weight.data.numpy().reshape(-1, ), model2.fc2.weight.data.numpy().reshape(-1, ))
+    
+    return (layer1 + layer2 + layer3 + fc1 + fc2) / 5
         
-        return (layer1 + layer2 + layer3 + fc1 + fc2) / 5
 
-    elif p.SIMILARITY == "manhattann":  # 작을수록 비슷
-        layer1 = cityblock(model1.layer1[0].weight.data.numpy().reshape(-1, ), model2.layer1[0].weight.data.numpy().reshape(-1, ))
-        layer2 = cityblock(model1.layer2[0].weight.data.numpy().reshape(-1, ), model2.layer2[0].weight.data.numpy().reshape(-1, ))
-        layer3 = cityblock(model1.layer3[0].weight.data.numpy().reshape(-1, ), model2.layer3[0].weight.data.numpy().reshape(-1, ))
-        fc1 = cityblock(model1.fc1.weight.data.numpy().reshape(-1, ), model2.fc1.weight.data.numpy().reshape(-1, ))
-        fc2 = cityblock(model1.fc2.weight.data.numpy().reshape(-1, ), model2.fc2.weight.data.numpy().reshape(-1, ))
-        # print(layer1, layer2, layer3, fc1, fc2)
-
-        if (layer1 + layer2 + layer3 + fc1 + fc2) == 0:
-            return 0
-        else:
-            return 1/(layer1 + layer2 + layer3 + fc1 + fc2)
+def quantize(x):
+    n=32
+    x=x.float()
+    x_norm=torch.norm(x,p=float('inf'))
+    
+    sgn_x=((x>0).float()-0.5)*2
+    
+    p=torch.div(torch.abs(x),x_norm)
+    renormalize_p=torch.mul(p,n)
+    floor_p=torch.floor(renormalize_p)
+    compare=torch.rand_like(floor_p)
+    final_p=renormalize_p-floor_p
+    margin=(compare < final_p).float()
+    xi=(floor_p+margin)/n
+    
+    Tilde_x=x_norm*sgn_x*xi
+    
+    return Tilde_x
